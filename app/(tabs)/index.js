@@ -71,11 +71,17 @@ export default function HomeScreen() {
 
     // Cleanup listeners on unmount
     return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+      try {
+        if (notificationListener.current && typeof notificationListener.current.remove === 'function') {
+          notificationListener.current.remove();
+        }
+        if (responseListener.current && typeof responseListener.current.remove === 'function') {
+          responseListener.current.remove();
+        }
+      } catch (error) {
+        if (config.DEBUG) {
+          console.log('[HomeScreen] Cleanup error (non-critical):', error.message);
+        }
       }
     };
   }, []);
