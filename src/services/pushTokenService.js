@@ -61,7 +61,21 @@ export const registerPushToken = async (
   if (hasPermission) {
     // Try to get the push token
     try {
-      const tokenData = await Notifications.getExpoPushTokenAsync();
+      const tokenParams = {};
+
+      // Add projectId if configured
+      if (config.EXPO_PROJECT_ID) {
+        tokenParams.projectId = config.EXPO_PROJECT_ID;
+        if (config.DEBUG) {
+          console.log('[PushTokenService] Using projectId:', config.EXPO_PROJECT_ID);
+        }
+      } else {
+        if (config.DEBUG) {
+          console.warn('[PushTokenService] No EXPO_PROJECT_ID configured');
+        }
+      }
+
+      const tokenData = await Notifications.getExpoPushTokenAsync(tokenParams);
       const pushToken = tokenData.data;
 
       if (config.DEBUG) {
