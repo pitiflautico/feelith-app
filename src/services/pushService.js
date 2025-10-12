@@ -80,11 +80,18 @@ export const registerForPushNotifications = async () => {
     // Get the Expo push token
     let token = null;
     try {
+      // Debug: log the config value
+      console.log('[PushService] DEBUG - config.EXPO_PROJECT_ID:', config.EXPO_PROJECT_ID);
+      console.log('[PushService] DEBUG - config.EXPO_PROJECT_ID type:', typeof config.EXPO_PROJECT_ID);
+
       const tokenParams = {};
 
       // Add projectId if configured
       if (config.EXPO_PROJECT_ID) {
         tokenParams.projectId = config.EXPO_PROJECT_ID;
+        console.log('[PushService] DEBUG - tokenParams:', tokenParams);
+      } else {
+        console.warn('[PushService] DEBUG - EXPO_PROJECT_ID is falsy!');
       }
 
       const tokenData = await Notifications.getExpoPushTokenAsync(tokenParams);
