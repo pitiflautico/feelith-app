@@ -152,13 +152,9 @@ const WebViewScreen = ({ onMessage, url }) => {
         allowFileAccess={false}
         allowUniversalAccessFromFileURLs={false}
         // iOS specific
-        ...(Platform.OS === 'ios' && {
-          allowsLinkPreview: false,
-        })
+        allowsLinkPreview={false}
         // Android specific
-        ...(Platform.OS === 'android' && {
-          mixedContentMode: 'compatibility',
-        })
+        mixedContentMode="compatibility"
       />
     </SafeAreaView>
   );
