@@ -21,6 +21,12 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
+    "notification": {
+      "icon": "./assets/images/notification-icon.png",
+      "color": "#007AFF",
+      "androidMode": "default",
+      "androidCollapsedTitle": "New notification"
+    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
@@ -40,7 +46,15 @@
         }
       ],
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#007AFF",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

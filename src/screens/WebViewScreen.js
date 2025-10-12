@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { StyleSheet, SafeAreaView, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import LoadingScreen from '../components/LoadingScreen';
@@ -14,15 +14,17 @@ import config from '../config/config';
  * @param {Object} props
  * @param {Function} props.onMessage - Callback for handling messages from the web app
  * @param {string} props.url - Optional custom URL (defaults to config.WEB_URL)
+ * @param {Function} props.onNavigate - Optional callback to expose navigate function to parent
  */
-const WebViewScreen = ({ onMessage, url }) => {
+const WebViewScreen = forwardRef(({ onMessage, url, onNavigate }, ref) => {
   const webViewRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
   const [key, setKey] = useState(0); // Used to force re-render on retry
+  const [currentUrl, setCurrentUrl] = useState(url || config.WEB_URL);
 
-  const webUrl = url || config.WEB_URL;
+  const webUrl = currentUrl;
 
   /**
    * Handles messages received from the web application via postMessage
@@ -111,6 +113,69 @@ const WebViewScreen = ({ onMessage, url }) => {
     setKey((prevKey) => prevKey + 1);
   };
 
+  /**
+   * Navigate to a new URL
+   * Can be called from parent component or push notifications
+   */
+  const navigateToUrl = (newUrl) => {
+    if (config.DEBUG) {
+      console.log('[WebView] Navigating to:', newUrl);
+    }
+
+    // If it's the same URL, just reload instead of changing URL
+    if (newUrl === currentUrl) {
+      if (config.DEBUG) {
+        console.log('[WebView] Same URL, reloading instead...');
+      }
+      reloadWebView();
+    } else {
+      // Use JavaScript injection to navigate to the new URL
+      // This is more reliable than changing the source prop
+      if (webViewRef.current) {
+        setCurrentUrl(newUrl);
+        setIsLoading(true);
+        setHasError(false);
+
+        // Wait a tick to ensure state is updated
+        setTimeout(() => {
+          const js = `window.location.href = '${newUrl}'; true;`;
+          webViewRef.current.injectJavaScript(js);
+
+          if (config.DEBUG) {
+            console.log('[WebView] Navigated via JavaScript injection');
+          }
+        }, 100);
+      } else {
+        console.error('[WebView] Cannot navigate, webViewRef is null');
+      }
+    }
+  };
+
+  /**
+   * Reload the current WebView
+   */
+  const reloadWebView = () => {
+    if (config.DEBUG) {
+      console.log('[WebView] Reloading...');
+    }
+    if (webViewRef.current) {
+      webViewRef.current.reload();
+    }
+  };
+
+  // Expose navigate and reload functions to parent via ref
+  useImperativeHandle(ref, () => ({
+    navigateToUrl,
+    reload: reloadWebView,
+  }));
+
+  // Call onNavigate callback when component mounts to give parent access to navigate
+  useEffect(() => {
+    if (onNavigate) {
+      onNavigate(navigateToUrl);
+    }
+  }, [onNavigate]);
+
   // Show error screen if there's an error
   if (hasError) {
     return (
@@ -155,10 +220,15 @@ const WebViewScreen = ({ onMessage, url }) => {
         allowsLinkPreview={false}
         // Android specific
         mixedContentMode="compatibility"
+        // Custom User-Agent to avoid Google OAuth blocking
+        userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+        // Allow third-party cookies for OAuth
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
       />
     </SafeAreaView>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

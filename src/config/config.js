@@ -14,7 +14,7 @@ const config = {
    * Change this to your web application URL for each new app
    * @example 'https://example.com'
    */
-  WEB_URL: 'https://expo.dev',
+  WEB_URL: 'https://feelith.com',
 
   // ===== App Information =====
 
@@ -56,6 +56,25 @@ const config = {
     USER_ID: 'user_id',
     USER_TOKEN: 'user_token',
     IS_LOGGED_IN: 'is_logged_in',
+  },
+
+  // ===== Push Notifications =====
+
+  /**
+   * Expo Project ID for push notifications
+   * Get this from: https://expo.dev > Your Project > Project settings
+   * Required for push notifications to work in production
+   * @example 'abc123-def456-ghi789'
+   */
+  EXPO_PROJECT_ID: undefined, // TODO: Add your Expo project ID here
+
+  /**
+   * Push notification retry configuration
+   */
+  PUSH_TOKEN_RETRY: {
+    MAX_RETRIES: 3,
+    INITIAL_DELAY_MS: 1000,
+    MAX_DELAY_MS: 10000,
   },
 
   // ===== UI Configuration =====
