@@ -25,9 +25,27 @@ const config = {
   APP_TITLE: 'Base App',
 
   /**
+   * App slug (lowercase, no spaces, used in URLs and paths)
+   * @example 'myapp'
+   */
+  APP_SLUG: 'app-base',
+
+  /**
    * App version (keep in sync with package.json)
    */
   APP_VERSION: '1.0.0',
+
+  /**
+   * iOS Bundle Identifier (reverse domain notation)
+   * @example 'com.yourcompany.appname'
+   */
+  IOS_BUNDLE_ID: 'com.yourcompany.appbase',
+
+  /**
+   * Android Package Name (reverse domain notation)
+   * @example 'com.yourcompany.appname'
+   */
+  ANDROID_PACKAGE: 'com.yourcompany.appbase',
 
   // ===== Feature Flags =====
 
@@ -77,6 +95,41 @@ const config = {
     INITIAL_DELAY_MS: 1000,
     MAX_DELAY_MS: 10000,
   },
+
+  // ===== Deep Linking & Sharing =====
+
+  /**
+   * URL scheme for deep linking
+   * This allows opening the app with URLs like: yourscheme://path
+   * @example 'myapp' allows myapp://calendar to open your app
+   * Change this to match your app name (lowercase, no spaces)
+   */
+  DEEP_LINK_SCHEME: 'baseapp',
+
+  /**
+   * Associated domains for Universal Links (iOS) and App Links (Android)
+   * These domains must serve the required association files:
+   * - iOS: /.well-known/apple-app-site-association
+   * - Android: /.well-known/assetlinks.json
+   *
+   * When configured, URLs like https://yourdomain.com/path will open your app
+   * See DEEP_LINKING.md for server-side configuration
+   *
+   * @example ['feelith.com', 'www.feelith.com']
+   */
+  ASSOCIATED_DOMAINS: [
+    // Add your production domains here
+    // 'yourdomain.com',
+    // 'www.yourdomain.com',
+  ],
+
+  /**
+   * Deep link URL prefixes
+   * Used to extract paths from incoming deep links
+   */
+  DEEP_LINK_PREFIXES: [
+    // Will be automatically populated based on DEEP_LINK_SCHEME and ASSOCIATED_DOMAINS
+  ],
 
   // ===== UI Configuration =====
 

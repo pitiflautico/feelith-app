@@ -8,6 +8,8 @@ import config from '../../src/config/config';
 import { requestPermissions, registerForPushNotifications } from '../../src/services/pushService';
 import { setWebViewNavigate, handleNotification, handleNotificationResponse } from '../../src/features/pushHandler';
 import { registerPushToken, unregisterPushToken } from '../../src/services/pushTokenService';
+import { share } from '../../src/services/sharingService';
+import { getInitialURL, addDeepLinkListener, handleDeepLink } from '../../src/services/deepLinkService';
 
 // Import notification testers in development mode
 if (__DEV__) {
@@ -24,6 +26,7 @@ export default function HomeScreen() {
   const { isLoggedIn, userId, userToken, isLoading, login, logout } = useAuth();
   const notificationListener = useRef();
   const responseListener = useRef();
+  const deepLinkListener = useRef();
 
   /**
    * Initialize push notifications
@@ -82,6 +85,54 @@ export default function HomeScreen() {
         if (config.DEBUG) {
           console.log('[HomeScreen] Cleanup error (non-critical):', error.message);
         }
+      }
+    };
+  }, []);
+
+  /**
+   * Initialize deep linking
+   */
+  useEffect(() => {
+    // Only initialize if feature is enabled
+    if (!config.FEATURES.DEEP_LINKING) {
+      return;
+    }
+
+    // Handle initial URL (when app is opened from a link)
+    const handleInitialURL = async () => {
+      try {
+        const initialUrl = await getInitialURL();
+        if (initialUrl && webViewRef.current) {
+          const navigateFn = webViewRef.current.navigateToUrl;
+          if (navigateFn) {
+            handleDeepLink(initialUrl, navigateFn);
+          }
+        }
+      } catch (error) {
+        console.error('[HomeScreen] Error handling initial URL:', error);
+      }
+    };
+
+    // Handle URL when app is already open
+    deepLinkListener.current = addDeepLinkListener((url) => {
+      if (webViewRef.current) {
+        const navigateFn = webViewRef.current.navigateToUrl;
+        if (navigateFn) {
+          handleDeepLink(url, navigateFn);
+        }
+      }
+    });
+
+    // Check for initial URL after a short delay to ensure webView is ready
+    const timeout = setTimeout(() => {
+      handleInitialURL();
+    }, 1000);
+
+    // Cleanup
+    return () => {
+      clearTimeout(timeout);
+      if (deepLinkListener.current && typeof deepLinkListener.current.remove === 'function') {
+        deepLinkListener.current.remove();
       }
     };
   }, []);
@@ -176,13 +227,33 @@ export default function HomeScreen() {
         break;
 
       case 'share':
+        // Check if sharing feature is enabled
+        if (!config.FEATURES.SHARING) {
+          console.warn('[HomeScreen] Share blocked: feature disabled in config');
+          return;
+        }
+
         // Check if user is authenticated before allowing share
         if (!isLoggedIn) {
           console.warn('[HomeScreen] Share blocked: user not authenticated');
           return;
         }
+
         console.log('[HomeScreen] Share requested:', message);
-        // TODO: Handle sharing in Phase 5
+
+        // Call sharing service with provided content
+        const shareSuccess = await share({
+          url: message.url,
+          text: message.text,
+          title: message.title,
+          message: message.message,
+        });
+
+        if (shareSuccess) {
+          console.log('[HomeScreen] ✅ Content shared successfully');
+        } else {
+          console.warn('[HomeScreen] ⚠️ Share cancelled or failed');
+        }
         break;
 
       default:
