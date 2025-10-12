@@ -13,6 +13,7 @@ export const AuthContext = createContext({
   isLoggedIn: false,
   userId: null,
   userToken: null,
+  pushTokenEndpoint: null,
   isLoading: true,
   login: async () => {},
   logout: async () => {},
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState(null);
   const [userToken, setUserToken] = useState(null);
+  const [pushTokenEndpoint, setPushTokenEndpoint] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   /**
@@ -51,6 +53,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoggedIn(true);
         setUserId(authData.userId);
         setUserToken(authData.userToken);
+        setPushTokenEndpoint(authData.pushTokenEndpoint || null);
 
         if (config.DEBUG) {
           console.log('[AuthContext] User is authenticated:', authData.userId);
@@ -59,6 +62,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoggedIn(false);
         setUserId(null);
         setUserToken(null);
+        setPushTokenEndpoint(null);
 
         if (config.DEBUG) {
           console.log('[AuthContext] User is not authenticated');
@@ -80,19 +84,24 @@ export const AuthProvider = ({ children }) => {
    *
    * @param {string} userId - The user's unique identifier
    * @param {string} userToken - The authentication token
+   * @param {string} pushEndpoint - Optional push token endpoint URL
    * @returns {Promise<boolean>} Success status
    */
-  const login = async (userId, userToken) => {
+  const login = async (userId, userToken, pushEndpoint = null) => {
     try {
-      const success = await authService.saveAuthData(userId, userToken);
+      const success = await authService.saveAuthData(userId, userToken, pushEndpoint);
 
       if (success) {
         setIsLoggedIn(true);
         setUserId(userId);
         setUserToken(userToken);
+        setPushTokenEndpoint(pushEndpoint);
 
         if (config.DEBUG) {
           console.log('[AuthContext] User logged in:', userId);
+          if (pushEndpoint) {
+            console.log('[AuthContext] Push endpoint saved:', pushEndpoint);
+          }
         }
 
         return true;
@@ -120,6 +129,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoggedIn(false);
         setUserId(null);
         setUserToken(null);
+        setPushTokenEndpoint(null);
 
         if (config.DEBUG) {
           console.log('[AuthContext] User logged out');
@@ -140,6 +150,7 @@ export const AuthProvider = ({ children }) => {
     isLoggedIn,
     userId,
     userToken,
+    pushTokenEndpoint,
     isLoading,
     login,
     logout,

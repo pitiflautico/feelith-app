@@ -13,14 +13,20 @@ import config from '../config/config';
  *
  * @param {string} userId - The user's unique identifier
  * @param {string} userToken - The authentication token
+ * @param {string} pushTokenEndpoint - Optional push token endpoint URL
  * @returns {Promise<boolean>} Success status
  */
-export const saveAuthData = async (userId, userToken) => {
+export const saveAuthData = async (userId, userToken, pushTokenEndpoint = null) => {
   try {
     // Store user data in SecureStore
     await SecureStore.setItemAsync(config.AUTH_STORAGE_KEYS.USER_ID, userId);
     await SecureStore.setItemAsync(config.AUTH_STORAGE_KEYS.USER_TOKEN, userToken);
     await SecureStore.setItemAsync(config.AUTH_STORAGE_KEYS.IS_LOGGED_IN, 'true');
+
+    // Store push token endpoint if provided
+    if (pushTokenEndpoint) {
+      await SecureStore.setItemAsync(config.AUTH_STORAGE_KEYS.PUSH_TOKEN_ENDPOINT, pushTokenEndpoint);
+    }
 
     if (config.DEBUG) {
       console.log('[AuthService] Auth data saved successfully');
@@ -43,6 +49,7 @@ export const getAuthData = async () => {
     const userId = await SecureStore.getItemAsync(config.AUTH_STORAGE_KEYS.USER_ID);
     const userToken = await SecureStore.getItemAsync(config.AUTH_STORAGE_KEYS.USER_TOKEN);
     const isLoggedIn = await SecureStore.getItemAsync(config.AUTH_STORAGE_KEYS.IS_LOGGED_IN);
+    const pushTokenEndpoint = await SecureStore.getItemAsync(config.AUTH_STORAGE_KEYS.PUSH_TOKEN_ENDPOINT);
 
     // If any required field is missing, return null
     if (!userId || !userToken || isLoggedIn !== 'true') {
@@ -56,6 +63,7 @@ export const getAuthData = async () => {
     return {
       userId,
       userToken,
+      pushTokenEndpoint,
       isLoggedIn: true,
     };
   } catch (error) {
@@ -74,6 +82,7 @@ export const clearAuthData = async () => {
     await SecureStore.deleteItemAsync(config.AUTH_STORAGE_KEYS.USER_ID);
     await SecureStore.deleteItemAsync(config.AUTH_STORAGE_KEYS.USER_TOKEN);
     await SecureStore.deleteItemAsync(config.AUTH_STORAGE_KEYS.IS_LOGGED_IN);
+    await SecureStore.deleteItemAsync(config.AUTH_STORAGE_KEYS.PUSH_TOKEN_ENDPOINT);
 
     if (config.DEBUG) {
       console.log('[AuthService] Auth data cleared successfully');

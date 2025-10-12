@@ -122,7 +122,11 @@ export default function HomeScreen() {
       case 'loginSuccess':
         // Handle authentication from web
         if (message.userId && message.userToken) {
-          const success = await login(message.userId, message.userToken);
+          const success = await login(
+            message.userId,
+            message.userToken,
+            message.pushTokenEndpoint
+          );
           if (success) {
             console.log('[HomeScreen] User logged in successfully:', message.userId);
 

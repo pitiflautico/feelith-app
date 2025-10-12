@@ -56,6 +56,7 @@ const config = {
     USER_ID: 'user_id',
     USER_TOKEN: 'user_token',
     IS_LOGGED_IN: 'is_logged_in',
+    PUSH_TOKEN_ENDPOINT: 'push_token_endpoint',
   },
 
   // ===== Push Notifications =====
