@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import WebViewScreen from '../../src/screens/WebViewScreen';
+import FloatingActionButton from '../../src/components/FloatingActionButton';
 import useAuth from '../../src/hooks/useAuth';
 import config from '../../src/config/config';
 import { requestPermissions, registerForPushNotifications } from '../../src/services/pushService';
@@ -21,6 +22,7 @@ export default function HomeScreen() {
   const notificationListener = useRef();
   const responseListener = useRef();
   const deepLinkListener = useRef();
+  const [webViewNavigate, setWebViewNavigateState] = useState(null);
 
   /**
    * Initialize push notifications
@@ -129,6 +131,8 @@ export default function HomeScreen() {
     // Get reload function from WebView ref
     const reloadFn = webViewRef.current?.reload;
     setWebViewNavigate(navigateFn, reloadFn);
+    // Store navigate function for FAB
+    setWebViewNavigateState(() => navigateFn);
   };
 
   /**
@@ -205,15 +209,24 @@ export default function HomeScreen() {
   }
 
   return (
-    <WebViewScreen
-      ref={webViewRef}
-      onMessage={handleWebMessage}
-      onNavigate={handleWebViewNavigate}
-    />
+    <View style={styles.container}>
+      <WebViewScreen
+        ref={webViewRef}
+        onMessage={handleWebMessage}
+        onNavigate={handleWebViewNavigate}
+      />
+      <FloatingActionButton
+        isLoggedIn={isLoggedIn}
+        onNavigate={webViewNavigate}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
