@@ -14,7 +14,7 @@ const config = {
    * Change this to your web application URL for each new app
    * @example 'https://example.com'
    */
-  WEB_URL: 'http://127.0.0.1:8000',
+  WEB_URL: __DEV__ ? 'http://127.0.0.1:8000' : 'https://feelith.com',
 
   // ===== App Information =====
 
@@ -22,13 +22,13 @@ const config = {
    * The display name of the application
    * This is used in native screens and can be different from the app name in stores
    */
-  APP_TITLE: 'Base App',
+  APP_TITLE: 'Feelith',
 
   /**
    * App slug (lowercase, no spaces, used in URLs and paths)
    * @example 'myapp'
    */
-  APP_SLUG: 'app-base',
+  APP_SLUG: 'feelith',
 
   /**
    * App version (keep in sync with package.json)
@@ -39,13 +39,13 @@ const config = {
    * iOS Bundle Identifier (reverse domain notation)
    * @example 'com.yourcompany.appname'
    */
-  IOS_BUNDLE_ID: 'com.yourcompany.appbase',
+  IOS_BUNDLE_ID: 'com.feelith.karma',
 
   /**
    * Android Package Name (reverse domain notation)
    * @example 'com.yourcompany.appname'
    */
-  ANDROID_PACKAGE: 'com.yourcompany.appbase',
+  ANDROID_PACKAGE: 'com.feelith.karma',
 
   // ===== Feature Flags =====
 
@@ -104,7 +104,7 @@ const config = {
    * @example 'myapp' allows myapp://calendar to open your app
    * Change this to match your app name (lowercase, no spaces)
    */
-  DEEP_LINK_SCHEME: 'baseapp',
+  DEEP_LINK_SCHEME: 'feelith',
 
   /**
    * Associated domains for Universal Links (iOS) and App Links (Android)
@@ -118,9 +118,8 @@ const config = {
    * @example ['feelith.com', 'www.feelith.com']
    */
   ASSOCIATED_DOMAINS: [
-    // Add your production domains here
-    // 'yourdomain.com',
-    // 'www.yourdomain.com',
+    'feelith.com',
+    'www.feelith.com',
   ],
 
   /**
@@ -137,13 +136,13 @@ const config = {
    * Theme colors (used in native screens like Error and Loading)
    */
   COLORS: {
-    PRIMARY: '#007AFF',
-    SECONDARY: '#5856D6',
+    PRIMARY: '#9333EA',      // Purple-600 (Karma brand color)
+    SECONDARY: '#7C3AED',    // Purple-700
     BACKGROUND: '#FFFFFF',
-    ERROR: '#FF3B30',
-    SUCCESS: '#34C759',
-    TEXT_PRIMARY: '#000000',
-    TEXT_SECONDARY: '#8E8E93',
+    ERROR: '#EF4444',        // Red-500
+    SUCCESS: '#10B981',      // Green-500
+    TEXT_PRIMARY: '#111827', // Gray-900
+    TEXT_SECONDARY: '#6B7280', // Gray-500
   },
 
   /**
