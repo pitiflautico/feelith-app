@@ -70,7 +70,7 @@ export default function FloatingActionButton({ isLoggedIn, onNavigate }) {
       id: 'new-mood',
       label: 'New Mood',
       icon: '😊',
-      path: '/dashboard',
+      path: '/mood/new',
     },
     // Future actions can be added here
     // {
