@@ -11,7 +11,7 @@ import config from '../config/config';
 export default function DebugOverlay() {
   const [logs, setLogs] = useState([]);
   const [isExpanded, setIsExpanded] = useState(false); // Start collapsed
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false); // Start hidden
   const [filter, setFilter] = useState('important'); // 'all', 'important', 'errors'
 
   useEffect(() => {

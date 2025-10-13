@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImageManipulator from 'expo-image-manipulator';
 import config from '../config/config';
+import { uploadSelfie } from '../services/selfieService';
 
 /**
  * Selfie Camera Screen
@@ -67,22 +69,52 @@ export default function SelfieCameraScreen({ onClose, onCapture }) {
 
   const processAndSendPhoto = async (photo) => {
     try {
-      // For now, we'll send the same photo twice
-      // In the future, we can implement actual heat map processing
+      console.log('[SelfieCameraScreen] Compressing photo...');
+
+      // Compress image to maximum (for analysis only)
+      // Target: ~50-100KB per image
+      const compressedPhoto = await ImageManipulator.manipulateAsync(
+        photo.uri,
+        [
+          { resize: { width: 640 } }, // Resize to max width 640px
+        ],
+        {
+          compress: 0.3, // 30% quality (good enough for facial analysis)
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        }
+      );
+
+      console.log('[SelfieCameraScreen] Photo compressed');
+      console.log('[SelfieCameraScreen] Original size:', photo.uri.length, 'chars');
+      console.log('[SelfieCameraScreen] Compressed size:', compressedPhoto.base64?.length || 0, 'chars');
+
+      // Upload to server
+      console.log('[SelfieCameraScreen] Uploading to server...');
+      const result = await uploadSelfie(
+        compressedPhoto.uri,
+        compressedPhoto.base64,
+        null // No mood entry ID for now
+      );
+
+      console.log('[SelfieCameraScreen] ✅ Upload successful:', result.url);
+      Alert.alert('Success', 'Selfie uploaded successfully!');
+
+      // Call onCapture callback if provided
       if (onCapture) {
         await onCapture({
-          normalPhoto: photo,
-          heatMapPhoto: photo, // TODO: Apply heat map filter
+          normalPhoto: compressedPhoto,
+          serverResponse: result,
         });
       }
 
-      // Close camera after successful capture
+      // Close camera after successful upload
       if (onClose) {
         onClose();
       }
     } catch (error) {
       console.error('[SelfieCameraScreen] Error processing photo:', error);
-      Alert.alert('Error', 'Failed to process photo. Please try again.');
+      Alert.alert('Error', error.message || 'Failed to upload photo. Please try again.');
     }
   };
 
@@ -126,35 +158,19 @@ export default function SelfieCameraScreen({ onClose, onCapture }) {
 
   return (
     <View style={styles.container}>
-      {/* Camera Views */}
-      <View style={styles.cameraContainer}>
-        {/* Normal Camera View */}
-        <View style={styles.cameraView}>
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            facing="front"
-            onCameraReady={handleCameraReady}
-          />
-          <View style={styles.cameraOverlay}>
-            <Text style={styles.viewLabel}>Normal View</Text>
-            {!isCameraReady && (
-              <Text style={styles.loadingText}>Loading camera...</Text>
-            )}
-          </View>
-        </View>
+      {/* Single Camera View */}
+      <CameraView
+        ref={cameraRef}
+        style={styles.camera}
+        facing="front"
+        onCameraReady={handleCameraReady}
+      />
 
-        {/* Heat Map Camera View */}
-        <View style={styles.cameraView}>
-          <CameraView
-            style={styles.camera}
-            facing="front"
-          />
-          <View style={[styles.cameraOverlay, styles.heatMapOverlay]}>
-            <Text style={styles.viewLabel}>Heat Map View</Text>
-            <Text style={styles.comingSoonText}>Filter Coming Soon</Text>
-          </View>
-        </View>
+      {/* Overlay with status */}
+      <View style={styles.statusOverlay}>
+        <Text style={styles.statusText}>
+          {!isCameraReady ? '⏳ Loading camera...' : '✓ Camera ready'}
+        </Text>
       </View>
 
       {/* Controls */}
@@ -230,50 +246,24 @@ const styles = StyleSheet.create({
     color: '#ccc',
     fontSize: 16,
   },
-  cameraContainer: {
-    flex: 1,
-    flexDirection: 'column',
-  },
-  cameraView: {
-    flex: 1,
-    position: 'relative',
-  },
   camera: {
     flex: 1,
   },
-  cameraOverlay: {
+  statusOverlay: {
     position: 'absolute',
-    top: 0,
+    top: 60,
     left: 0,
     right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    padding: 16,
+    alignItems: 'center',
   },
-  heatMapOverlay: {
-    backgroundColor: 'rgba(255, 0, 0, 0.1)', // Temporary red tint
-  },
-  viewLabel: {
+  statusText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  comingSoonText: {
-    color: '#fff',
-    fontSize: 12,
-    marginTop: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  loadingText: {
-    color: '#fff',
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
