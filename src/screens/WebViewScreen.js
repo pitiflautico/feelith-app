@@ -114,16 +114,27 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate }, ref) => {
   };
 
   /**
-   * Navigate to a new URL
+   * Navigate to a new URL or path
    * Can be called from parent component or push notifications
+   * Accepts both full URLs and relative paths (e.g., '/mood/new')
    */
-  const navigateToUrl = (newUrl) => {
+  const navigateToUrl = (urlOrPath) => {
     if (config.DEBUG) {
-      console.log('[WebView] Navigating to:', newUrl);
+      console.log('[WebView] Navigating to:', urlOrPath);
+    }
+
+    // Build full URL if it's a relative path
+    let fullUrl = urlOrPath;
+    if (urlOrPath.startsWith('/')) {
+      // It's a relative path, prepend the base URL
+      fullUrl = config.WEB_URL + urlOrPath;
+      if (config.DEBUG) {
+        console.log('[WebView] Converting relative path to full URL:', fullUrl);
+      }
     }
 
     // If it's the same URL, just reload instead of changing URL
-    if (newUrl === currentUrl) {
+    if (fullUrl === currentUrl) {
       if (config.DEBUG) {
         console.log('[WebView] Same URL, reloading instead...');
       }
@@ -132,13 +143,13 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate }, ref) => {
       // Use JavaScript injection to navigate to the new URL
       // This is more reliable than changing the source prop
       if (webViewRef.current) {
-        setCurrentUrl(newUrl);
+        setCurrentUrl(fullUrl);
         setIsLoading(true);
         setHasError(false);
 
         // Wait a tick to ensure state is updated
         setTimeout(() => {
-          const js = `window.location.href = '${newUrl}'; true;`;
+          const js = `window.location.href = '${fullUrl}'; true;`;
           webViewRef.current.injectJavaScript(js);
 
           if (config.DEBUG) {
