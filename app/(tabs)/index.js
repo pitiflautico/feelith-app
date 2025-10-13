@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import WebViewScreen from '../../src/screens/WebViewScreen';
+import SelfieCameraScreen from '../../src/screens/SelfieCameraScreen';
 import FloatingActionButton from '../../src/components/FloatingActionButton';
+import DebugOverlay from '../../src/components/DebugOverlay';
 import useAuth from '../../src/hooks/useAuth';
 import config from '../../src/config/config';
 import { requestPermissions, registerForPushNotifications } from '../../src/services/pushService';
@@ -23,6 +25,17 @@ export default function HomeScreen() {
   const responseListener = useRef();
   const deepLinkListener = useRef();
   const [webViewNavigate, setWebViewNavigateState] = useState(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
+  // Debug: Log auth state changes
+  useEffect(() => {
+    console.log('[HomeScreen] 🔵 Auth state changed:', {
+      isLoggedIn,
+      userId,
+      hasToken: !!userToken,
+      isLoading
+    });
+  }, [isLoggedIn, userId, userToken, isLoading]);
 
   /**
    * Initialize push notifications
@@ -140,15 +153,24 @@ export default function HomeScreen() {
    * Processes authentication, sharing, and other native actions
    */
   const handleWebMessage = async (message) => {
+    console.log('[HomeScreen] 🔵 Message received from WebView:', message);
+
     // Validate message structure
     if (!message || !message.action) {
-      console.warn('[HomeScreen] Invalid message format:', message);
+      console.warn('[HomeScreen] ⚠️ Invalid message format:', message);
       return;
     }
+
+    console.log('[HomeScreen] 🔵 Processing action:', message.action);
 
     // Handle different message types
     switch (message.action) {
       case 'loginSuccess':
+        console.log('[HomeScreen] 🟢 Login success message received');
+        console.log('[HomeScreen] 🔵 User ID:', message.userId);
+        console.log('[HomeScreen] 🔵 Has token:', !!message.userToken);
+        console.log('[HomeScreen] 🔵 Push endpoint:', message.pushTokenEndpoint);
+
         // Handle authentication from web
         if (message.userId && message.userToken) {
           const success = await login(
@@ -157,7 +179,10 @@ export default function HomeScreen() {
             message.pushTokenEndpoint
           );
 
+          console.log('[HomeScreen] 🔵 Login result:', success ? 'SUCCESS' : 'FAILED');
+
           if (success && message.pushTokenEndpoint) {
+            console.log('[HomeScreen] 🔵 Registering push token...');
             // Register push token with backend if endpoint provided
             await registerPushToken(
               message.userId,
@@ -165,21 +190,28 @@ export default function HomeScreen() {
               message.pushTokenEndpoint
             );
           }
+        } else {
+          console.error('[HomeScreen] ❌ Missing userId or userToken');
         }
         break;
 
       case 'logout':
+        console.log('[HomeScreen] 🔴 Logout message received');
         // Handle logout from web
         // Try to unregister push token before logout
         if (message.pushTokenEndpoint && userId && userToken) {
+          console.log('[HomeScreen] 🔵 Unregistering push token...');
           await unregisterPushToken(userId, userToken, message.pushTokenEndpoint);
         }
         await logout();
+        console.log('[HomeScreen] 🔴 Logout complete');
         break;
 
       case 'share':
+        console.log('[HomeScreen] 🔵 Share message received');
         // Check if sharing feature is enabled
         if (!config.FEATURES.SHARING || !isLoggedIn) {
+          console.warn('[HomeScreen] ⚠️ Sharing not enabled or not logged in');
           return;
         }
 
@@ -193,8 +225,40 @@ export default function HomeScreen() {
         break;
 
       default:
-        // Unknown action
+        console.warn('[HomeScreen] ⚠️ Unknown action:', message.action);
         break;
+    }
+  };
+
+  /**
+   * Handle opening camera
+   */
+  const handleCameraOpen = () => {
+    setCameraOpen(true);
+  };
+
+  /**
+   * Handle closing camera
+   */
+  const handleCameraClose = () => {
+    setCameraOpen(false);
+  };
+
+  /**
+   * Handle photo capture from camera
+   */
+  const handlePhotoCapture = async (photos) => {
+    try {
+      console.log('[HomeScreen] Photos captured:', photos);
+
+      // TODO: Send photos to backend
+      // For now, just log them
+      // In the future, we'll create an API endpoint to upload these
+
+      // Close camera
+      setCameraOpen(false);
+    } catch (error) {
+      console.error('[HomeScreen] Error handling photo capture:', error);
     }
   };
 
@@ -218,7 +282,24 @@ export default function HomeScreen() {
       <FloatingActionButton
         isLoggedIn={isLoggedIn}
         onNavigate={webViewNavigate}
+        onCameraOpen={handleCameraOpen}
       />
+
+      {/* Camera Modal */}
+      <Modal
+        visible={cameraOpen}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={handleCameraClose}
+      >
+        <SelfieCameraScreen
+          onClose={handleCameraClose}
+          onCapture={handlePhotoCapture}
+        />
+      </Modal>
+
+      {/* Debug Overlay - Only visible in development */}
+      <DebugOverlay />
     </View>
   );
 }

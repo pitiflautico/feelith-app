@@ -14,7 +14,7 @@ const config = {
    * Change this to your web application URL for each new app
    * @example 'https://example.com'
    */
-  WEB_URL: __DEV__ ? 'http://127.0.0.1:8000' : 'https://feelith.com',
+  WEB_URL: __DEV__ ? 'https://feelith.com' : 'https://feelith.com',
 
   // ===== App Information =====
 

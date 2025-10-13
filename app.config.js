@@ -110,6 +110,12 @@ module.exports = {
           defaultChannel: 'default',
         },
       ],
+      [
+        'expo-camera',
+        {
+          cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera to capture emotional selfies.',
+        },
+      ],
     ],
 
     // ===== EXPERIMENTS =====

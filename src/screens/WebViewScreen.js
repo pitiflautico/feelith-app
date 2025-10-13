@@ -33,6 +33,19 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate }, ref) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
 
+      // Handle console logs from WebView
+      if (message.type === '__CONSOLE_LOG__') {
+        const logMessage = `[WebView JS] ${message.message}`;
+        if (message.level === 'ERROR') {
+          console.error(logMessage);
+        } else if (message.level === 'WARN') {
+          console.warn(logMessage);
+        } else {
+          console.log(logMessage);
+        }
+        return;
+      }
+
       if (config.DEBUG) {
         console.log('[WebView] Message received:', message);
       }
@@ -216,6 +229,60 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate }, ref) => {
         onLoadEnd={handleLoadEnd}
         onError={handleError}
         onHttpError={handleHttpError}
+        // Inject JavaScript to ensure bridge is available and capture logs
+        injectedJavaScriptBeforeContentLoaded={`
+          (function() {
+            // Ensure window.ReactNativeWebView is available
+            if (window.ReactNativeWebView) {
+              console.log('[WebView] ReactNativeWebView injected successfully');
+              // Set a flag to indicate we're in the native app
+              window.__RUNNING_IN_NATIVE_APP__ = true;
+
+              // Intercept console.log to send logs to React Native
+              const originalLog = console.log;
+              const originalError = console.error;
+              const originalWarn = console.warn;
+
+              console.log = function(...args) {
+                originalLog.apply(console, args);
+                try {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: '__CONSOLE_LOG__',
+                    level: 'LOG',
+                    message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+                  }));
+                } catch (e) {}
+              };
+
+              console.error = function(...args) {
+                originalError.apply(console, args);
+                try {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: '__CONSOLE_LOG__',
+                    level: 'ERROR',
+                    message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+                  }));
+                } catch (e) {}
+              };
+
+              console.warn = function(...args) {
+                originalWarn.apply(console, args);
+                try {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: '__CONSOLE_LOG__',
+                    level: 'WARN',
+                    message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+                  }));
+                } catch (e) {}
+              };
+
+              console.log('[WebView] Console interception enabled');
+            } else {
+              console.warn('[WebView] ReactNativeWebView not available');
+            }
+          })();
+          true; // Required for iOS
+        `}
         // Security settings
         allowsBackForwardNavigationGestures={Platform.OS === 'ios'}
         allowsInlineMediaPlayback

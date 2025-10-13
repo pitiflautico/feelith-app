@@ -19,7 +19,7 @@ const { width } = Dimensions.get('window');
  * When pressed, expands to show quick action options.
  * Only visible when user is logged in.
  */
-export default function FloatingActionButton({ isLoggedIn, onNavigate }) {
+export default function FloatingActionButton({ isLoggedIn, onNavigate, onCameraOpen }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -48,14 +48,22 @@ export default function FloatingActionButton({ isLoggedIn, onNavigate }) {
     setIsExpanded(!isExpanded);
   };
 
-  const handleAction = (path) => {
+  const handleAction = (menuItem) => {
     // Close menu
     toggleMenu();
 
-    // Navigate to path after a short delay for smooth animation
+    // Handle action after a short delay for smooth animation
     setTimeout(() => {
-      if (onNavigate && typeof onNavigate === 'function') {
-        onNavigate(path);
+      if (menuItem.action === 'camera') {
+        // Open camera
+        if (onCameraOpen && typeof onCameraOpen === 'function') {
+          onCameraOpen();
+        }
+      } else if (menuItem.path) {
+        // Navigate to path
+        if (onNavigate && typeof onNavigate === 'function') {
+          onNavigate(menuItem.path);
+        }
       }
     }, 200);
   };
@@ -72,13 +80,12 @@ export default function FloatingActionButton({ isLoggedIn, onNavigate }) {
       icon: '😊',
       path: '/mood/new',
     },
-    // Future actions can be added here
-    // {
-    //   id: 'other-action',
-    //   label: 'Other Action',
-    //   icon: '📝',
-    //   path: '/other-path',
-    // },
+    {
+      id: 'photo-selfie',
+      label: 'Photo Selfie',
+      icon: '📸',
+      action: 'camera',
+    },
   ];
 
   return (
@@ -118,7 +125,7 @@ export default function FloatingActionButton({ isLoggedIn, onNavigate }) {
           >
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => handleAction(action.path)}
+              onPress={() => handleAction(action)}
               activeOpacity={0.8}
             >
               <View style={styles.menuItemContent}>
