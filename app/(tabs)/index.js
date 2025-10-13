@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import WebViewScreen from '../../src/screens/WebViewScreen';
-import NotificationTestButton from '../../src/components/NotificationTestButton';
 import useAuth from '../../src/hooks/useAuth';
 import config from '../../src/config/config';
 import { requestPermissions, registerForPushNotifications } from '../../src/services/pushService';
@@ -10,11 +9,6 @@ import { setWebViewNavigate, handleNotification, handleNotificationResponse } fr
 import { registerPushToken, unregisterPushToken } from '../../src/services/pushTokenService';
 import { share } from '../../src/services/sharingService';
 import { getInitialURL, addDeepLinkListener, handleDeepLink } from '../../src/services/deepLinkService';
-
-// Import notification testers in development mode
-if (__DEV__) {
-  require('../../src/utils/notificationTester');
-}
 
 /**
  * Main Home Screen
@@ -42,11 +36,7 @@ export default function HomeScreen() {
       try {
         const hasPermission = await requestPermissions();
         if (hasPermission) {
-          const pushToken = await registerForPushNotifications();
-          if (pushToken && config.DEBUG) {
-            console.log('[HomeScreen] Push token obtained:', pushToken);
-            // TODO: Send pushToken to your backend here
-          }
+          await registerForPushNotifications();
         }
       } catch (error) {
         console.error('[HomeScreen] Error initializing push notifications:', error);
@@ -58,17 +48,11 @@ export default function HomeScreen() {
     // Register notification listeners
     // This listener is called when notification is received while app is in foreground
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      if (config.DEBUG) {
-        console.log('[HomeScreen] Notification received (foreground):', notification);
-      }
       handleNotification(notification);
     });
 
     // This listener is called when user taps on notification
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      if (config.DEBUG) {
-        console.log('[HomeScreen] Notification tapped:', response);
-      }
       handleNotificationResponse(response);
     });
 
@@ -82,9 +66,7 @@ export default function HomeScreen() {
           responseListener.current.remove();
         }
       } catch (error) {
-        if (config.DEBUG) {
-          console.log('[HomeScreen] Cleanup error (non-critical):', error.message);
-        }
+        // Ignore cleanup errors
       }
     };
   }, []);
@@ -147,9 +129,6 @@ export default function HomeScreen() {
     // Get reload function from WebView ref
     const reloadFn = webViewRef.current?.reload;
     setWebViewNavigate(navigateFn, reloadFn);
-    if (config.DEBUG) {
-      console.log('[HomeScreen] WebView navigation and reload registered with push handler');
-    }
   };
 
   /**
@@ -157,14 +136,9 @@ export default function HomeScreen() {
    * Processes authentication, sharing, and other native actions
    */
   const handleWebMessage = async (message) => {
-    console.log('========================================');
-    console.log('[HomeScreen] 📨 MESSAGE RECEIVED!');
-    console.log('[HomeScreen] Message:', JSON.stringify(message, null, 2));
-    console.log('========================================');
-
     // Validate message structure
     if (!message || !message.action) {
-      console.warn('[HomeScreen] ⚠️ Invalid message format:', message);
+      console.warn('[HomeScreen] Invalid message format:', message);
       return;
     }
 
@@ -178,33 +152,15 @@ export default function HomeScreen() {
             message.userToken,
             message.pushTokenEndpoint
           );
-          if (success) {
-            console.log('[HomeScreen] User logged in successfully:', message.userId);
 
+          if (success && message.pushTokenEndpoint) {
             // Register push token with backend if endpoint provided
-            if (message.pushTokenEndpoint) {
-              console.log('[HomeScreen] Push token endpoint provided, registering...');
-              const tokenRegistered = await registerPushToken(
-                message.userId,
-                message.userToken,
-                message.pushTokenEndpoint
-              );
-
-              if (tokenRegistered) {
-                console.log('[HomeScreen] ✅ Push token registered with backend');
-              } else {
-                console.warn('[HomeScreen] ⚠️ Failed to register push token with backend');
-              }
-            } else {
-              if (config.DEBUG) {
-                console.log('[HomeScreen] No pushTokenEndpoint provided, skipping registration');
-              }
-            }
-          } else {
-            console.error('[HomeScreen] Failed to save login data');
+            await registerPushToken(
+              message.userId,
+              message.userToken,
+              message.pushTokenEndpoint
+            );
           }
-        } else {
-          console.warn('[HomeScreen] Login message missing userId or userToken');
         }
         break;
 
@@ -212,52 +168,29 @@ export default function HomeScreen() {
         // Handle logout from web
         // Try to unregister push token before logout
         if (message.pushTokenEndpoint && userId && userToken) {
-          if (config.DEBUG) {
-            console.log('[HomeScreen] Unregistering push token before logout...');
-          }
           await unregisterPushToken(userId, userToken, message.pushTokenEndpoint);
         }
-
-        const success = await logout();
-        if (success) {
-          console.log('[HomeScreen] User logged out successfully');
-        } else {
-          console.error('[HomeScreen] Failed to logout');
-        }
+        await logout();
         break;
 
       case 'share':
         // Check if sharing feature is enabled
-        if (!config.FEATURES.SHARING) {
-          console.warn('[HomeScreen] Share blocked: feature disabled in config');
+        if (!config.FEATURES.SHARING || !isLoggedIn) {
           return;
         }
-
-        // Check if user is authenticated before allowing share
-        if (!isLoggedIn) {
-          console.warn('[HomeScreen] Share blocked: user not authenticated');
-          return;
-        }
-
-        console.log('[HomeScreen] Share requested:', message);
 
         // Call sharing service with provided content
-        const shareSuccess = await share({
+        await share({
           url: message.url,
           text: message.text,
           title: message.title,
           message: message.message,
         });
-
-        if (shareSuccess) {
-          console.log('[HomeScreen] ✅ Content shared successfully');
-        } else {
-          console.warn('[HomeScreen] ⚠️ Share cancelled or failed');
-        }
         break;
 
       default:
-        console.log('[HomeScreen] Unknown action:', message.action);
+        // Unknown action
+        break;
     }
   };
 
@@ -272,14 +205,11 @@ export default function HomeScreen() {
   }
 
   return (
-    <>
-      <WebViewScreen
-        ref={webViewRef}
-        onMessage={handleWebMessage}
-        onNavigate={handleWebViewNavigate}
-      />
-      <NotificationTestButton />
-    </>
+    <WebViewScreen
+      ref={webViewRef}
+      onMessage={handleWebMessage}
+      onNavigate={handleWebViewNavigate}
+    />
   );
 }
 
