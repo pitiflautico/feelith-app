@@ -14,6 +14,7 @@ export default function SelfieCameraScreen({ onClose, onCapture }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
   const cameraRef = useRef(null);
 
   useEffect(() => {
@@ -23,13 +24,26 @@ export default function SelfieCameraScreen({ onClose, onCapture }) {
     }
   }, []);
 
+  const handleCameraReady = () => {
+    setIsCameraReady(true);
+    console.log('[SelfieCameraScreen] Camera is ready');
+  };
+
   const handleCapture = async () => {
     if (!cameraRef.current) {
+      console.warn('[SelfieCameraScreen] Camera ref is null');
+      return;
+    }
+
+    if (!isCameraReady) {
+      console.warn('[SelfieCameraScreen] Camera is not ready yet');
+      Alert.alert('Please wait', 'Camera is still loading...');
       return;
     }
 
     try {
       setIsProcessing(true);
+      console.log('[SelfieCameraScreen] Taking picture...');
 
       // Capture photo
       const photo = await cameraRef.current.takePictureAsync({
@@ -38,6 +52,7 @@ export default function SelfieCameraScreen({ onClose, onCapture }) {
         exif: false,
       });
 
+      console.log('[SelfieCameraScreen] Photo captured:', photo.uri);
       setCapturedPhoto(photo);
       setIsProcessing(false);
 
@@ -119,9 +134,13 @@ export default function SelfieCameraScreen({ onClose, onCapture }) {
             ref={cameraRef}
             style={styles.camera}
             facing="front"
+            onCameraReady={handleCameraReady}
           />
           <View style={styles.cameraOverlay}>
             <Text style={styles.viewLabel}>Normal View</Text>
+            {!isCameraReady && (
+              <Text style={styles.loadingText}>Loading camera...</Text>
+            )}
           </View>
         </View>
 
@@ -148,9 +167,9 @@ export default function SelfieCameraScreen({ onClose, onCapture }) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.captureButton, isProcessing && styles.captureButtonDisabled]}
+          style={[styles.captureButton, (isProcessing || !isCameraReady) && styles.captureButtonDisabled]}
           onPress={handleCapture}
-          disabled={isProcessing}
+          disabled={isProcessing || !isCameraReady}
         >
           <View style={styles.captureButtonInner} />
         </TouchableOpacity>
@@ -246,6 +265,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     marginTop: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
