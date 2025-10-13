@@ -1,5 +1,5 @@
 import config from '../config/config';
-import { getStoredToken } from './authService';
+import { getUserToken } from './authService';
 
 /**
  * Upload a selfie photo to the server
@@ -9,8 +9,8 @@ import { getStoredToken } from './authService';
  */
 export async function uploadSelfie(photoUri, base64Data, moodEntryId = null) {
   try {
-    const token = await getStoredToken();
-    
+    const token = await getUserToken();
+
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -60,8 +60,8 @@ export async function uploadSelfie(photoUri, base64Data, moodEntryId = null) {
  */
 export async function getSelfies(limit = 50) {
   try {
-    const token = await getStoredToken();
-    
+    const token = await getUserToken();
+
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -94,8 +94,8 @@ export async function getSelfies(limit = 50) {
  */
 export async function deleteSelfie(id) {
   try {
-    const token = await getStoredToken();
-    
+    const token = await getUserToken();
+
     if (!token) {
       throw new Error('Not authenticated');
     }

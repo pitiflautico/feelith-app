@@ -4,7 +4,6 @@ import * as Notifications from 'expo-notifications';
 import WebViewScreen from '../../src/screens/WebViewScreen';
 import SelfieCameraScreen from '../../src/screens/SelfieCameraScreen';
 import FloatingActionButton from '../../src/components/FloatingActionButton';
-import DebugOverlay from '../../src/components/DebugOverlay';
 import useAuth from '../../src/hooks/useAuth';
 import config from '../../src/config/config';
 import { requestPermissions, registerForPushNotifications } from '../../src/services/pushService';
@@ -297,9 +296,6 @@ export default function HomeScreen() {
           onCapture={handlePhotoCapture}
         />
       </Modal>
-
-      {/* Debug Overlay - Only visible in development */}
-      <DebugOverlay />
     </View>
   );
 }
