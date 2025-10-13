@@ -167,4 +167,4 @@ const config = {
   SHOW_DEV_ERRORS: __DEV__,
 };
 
-export default config;
+module.exports = config;

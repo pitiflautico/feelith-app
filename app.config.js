@@ -8,9 +8,9 @@
  * 3. The deep linking configuration will be automatically applied from config.js
  */
 
-import config from './src/config/config.js';
+const config = require('./src/config/config.js');
 
-export default {
+module.exports = {
   expo: {
     // ===== APP IDENTITY =====
     // Automatically configured from src/config/config.js
