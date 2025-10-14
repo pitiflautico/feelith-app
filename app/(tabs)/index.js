@@ -25,6 +25,8 @@ export default function HomeScreen() {
   const deepLinkListener = useRef();
   const [webViewNavigate, setWebViewNavigateState] = useState(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [webViewReady, setWebViewReady] = useState(false);
+  const pendingInitialUrl = useRef(null);
 
   // Debug: Log auth state changes
   useEffect(() => {
@@ -98,10 +100,18 @@ export default function HomeScreen() {
     const handleInitialURL = async () => {
       try {
         const initialUrl = await getInitialURL();
-        if (initialUrl && webViewRef.current) {
-          const navigateFn = webViewRef.current.navigateToUrl;
-          if (navigateFn) {
-            handleDeepLink(initialUrl, navigateFn);
+        if (initialUrl) {
+          console.log('[HomeScreen] Initial URL detected:', initialUrl);
+          pendingInitialUrl.current = initialUrl;
+
+          // If WebView is already ready, handle immediately
+          if (webViewReady && webViewRef.current) {
+            const navigateFn = webViewRef.current.navigateToUrl;
+            if (navigateFn) {
+              console.log('[HomeScreen] WebView ready, handling initial URL immediately');
+              handleDeepLink(initialUrl, navigateFn);
+              pendingInitialUrl.current = null;
+            }
           }
         }
       } catch (error) {
@@ -119,19 +129,39 @@ export default function HomeScreen() {
       }
     });
 
-    // Check for initial URL after a short delay to ensure webView is ready
-    const timeout = setTimeout(() => {
-      handleInitialURL();
-    }, 1000);
+    // Check for initial URL immediately
+    handleInitialURL();
 
     // Cleanup
     return () => {
-      clearTimeout(timeout);
       if (deepLinkListener.current && typeof deepLinkListener.current.remove === 'function') {
         deepLinkListener.current.remove();
       }
     };
   }, []);
+
+  /**
+   * Handle WebView ready state
+   * Process any pending deep links when WebView becomes ready
+   */
+  useEffect(() => {
+    if (webViewReady && pendingInitialUrl.current && webViewRef.current) {
+      const navigateFn = webViewRef.current.navigateToUrl;
+      if (navigateFn) {
+        console.log('[HomeScreen] WebView ready, processing pending URL:', pendingInitialUrl.current);
+        handleDeepLink(pendingInitialUrl.current, navigateFn);
+        pendingInitialUrl.current = null;
+      }
+    }
+  }, [webViewReady]);
+
+  /**
+   * Handle WebView ready callback
+   */
+  const handleWebViewReady = () => {
+    console.log('[HomeScreen] WebView is ready');
+    setWebViewReady(true);
+  };
 
   /**
    * Handle WebView navigation function registration
@@ -277,6 +307,7 @@ export default function HomeScreen() {
         ref={webViewRef}
         onMessage={handleWebMessage}
         onNavigate={handleWebViewNavigate}
+        onReady={handleWebViewReady}
       />
       <FloatingActionButton
         isLoggedIn={isLoggedIn}

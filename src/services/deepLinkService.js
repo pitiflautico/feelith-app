@@ -76,8 +76,14 @@ export const deepLinkToWebUrl = (path) => {
   // Remove leading slash if present
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
 
+  // Ensure WEB_URL doesn't end with slash
+  const baseUrl = config.WEB_URL.endsWith('/')
+    ? config.WEB_URL.slice(0, -1)
+    : config.WEB_URL;
+
   // Construct full web URL
-  const webUrl = `${config.WEB_URL}/${cleanPath}`;
+  // Only add slash if there's a path
+  const webUrl = cleanPath ? `${baseUrl}/${cleanPath}` : baseUrl;
 
   if (config.DEBUG) {
     console.log('[DeepLinkService] Converted deep link to web URL:', {

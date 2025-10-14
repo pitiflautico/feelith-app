@@ -15,14 +15,16 @@ import config from '../config/config';
  * @param {Function} props.onMessage - Callback for handling messages from the web app
  * @param {string} props.url - Optional custom URL (defaults to config.WEB_URL)
  * @param {Function} props.onNavigate - Optional callback to expose navigate function to parent
+ * @param {Function} props.onReady - Optional callback when WebView is ready for navigation
  */
-const WebViewScreen = forwardRef(({ onMessage, url, onNavigate }, ref) => {
+const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady }, ref) => {
   const webViewRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
   const [key, setKey] = useState(0); // Used to force re-render on retry
   const [currentUrl, setCurrentUrl] = useState(url || config.WEB_URL);
+  const [isReady, setIsReady] = useState(false);
 
   const webUrl = currentUrl;
 
@@ -80,6 +82,17 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate }, ref) => {
     setIsLoading(false);
     if (config.DEBUG) {
       console.log('[WebView] Loading completed');
+    }
+
+    // Mark WebView as ready and notify parent
+    if (!isReady) {
+      setIsReady(true);
+      if (onReady) {
+        if (config.DEBUG) {
+          console.log('[WebView] Notifying parent that WebView is ready');
+        }
+        onReady();
+      }
     }
   };
 
