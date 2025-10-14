@@ -5,6 +5,7 @@ import WebViewScreen from '../../src/screens/WebViewScreen';
 import SelfieCameraScreen from '../../src/screens/SelfieCameraScreen';
 import FloatingActionButton from '../../src/components/FloatingActionButton';
 import useAuth from '../../src/hooks/useAuth';
+import { useOnboarding } from '../../src/contexts/OnboardingContext';
 import config from '../../src/config/config';
 import { requestPermissions, registerForPushNotifications } from '../../src/services/pushService';
 import { setWebViewNavigate, handleNotification, handleNotificationResponse } from '../../src/features/pushHandler';
@@ -20,6 +21,7 @@ import { getInitialURL, addDeepLinkListener, handleDeepLink } from '../../src/se
  */
 export default function HomeScreen() {
   const { isLoggedIn, userId, userToken, isLoading, login, logout } = useAuth();
+  const { isOnboarding, setIsOnboarding } = useOnboarding();
   const notificationListener = useRef();
   const responseListener = useRef();
   const deepLinkListener = useRef();
@@ -291,6 +293,16 @@ export default function HomeScreen() {
     }
   };
 
+  /**
+   * Handle URL change from WebView
+   * Detects if user is on onboarding screen
+   */
+  const handleUrlChange = (url) => {
+    const isOnboardingPage = url && url.includes('/onboarding');
+    console.log('[HomeScreen] URL changed:', url, '- Is onboarding:', isOnboardingPage);
+    setIsOnboarding(isOnboardingPage);
+  };
+
   // Show loading screen while checking authentication
   if (isLoading) {
     return (
@@ -319,12 +331,15 @@ export default function HomeScreen() {
         onMessage={handleWebMessage}
         onNavigate={handleWebViewNavigate}
         onReady={handleWebViewReady}
+        onUrlChange={handleUrlChange}
       />
-      <FloatingActionButton
-        isLoggedIn={isLoggedIn}
-        onNavigate={webViewNavigate}
-        onCameraOpen={handleCameraOpen}
-      />
+      {!isOnboarding && (
+        <FloatingActionButton
+          isLoggedIn={isLoggedIn}
+          onNavigate={webViewNavigate}
+          onCameraOpen={handleCameraOpen}
+        />
+      )}
 
       {/* Camera Modal */}
       <Modal

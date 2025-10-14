@@ -17,7 +17,7 @@ import config from '../config/config';
  * @param {Function} props.onNavigate - Optional callback to expose navigate function to parent
  * @param {Function} props.onReady - Optional callback when WebView is ready for navigation
  */
-const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady }, ref) => {
+const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlChange }, ref) => {
   const webViewRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -93,6 +93,20 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady }, ref) 
         }
         onReady();
       }
+    }
+  };
+
+  /**
+   * Called when WebView navigation state changes
+   */
+  const handleNavigationStateChange = (navState) => {
+    if (config.DEBUG) {
+      console.log('[WebView] Navigation state changed:', navState.url);
+    }
+
+    // Notify parent of URL change
+    if (onUrlChange) {
+      onUrlChange(navState.url);
     }
   };
 
@@ -242,6 +256,7 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady }, ref) 
         onLoadEnd={handleLoadEnd}
         onError={handleError}
         onHttpError={handleHttpError}
+        onNavigationStateChange={handleNavigationStateChange}
         // Inject JavaScript to ensure bridge is available and capture logs
         injectedJavaScriptBeforeContentLoaded={`
           (function() {
