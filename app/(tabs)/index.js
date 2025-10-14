@@ -301,10 +301,21 @@ export default function HomeScreen() {
     );
   }
 
+  // Determine the initial URL based on login state
+  const getInitialUrl = () => {
+    if (isLoggedIn && userToken) {
+      // If logged in, load session establishment URL
+      return `${config.WEB_URL}/auth/session?token=${userToken}`;
+    }
+    // Not logged in, load normal home page
+    return config.WEB_URL;
+  };
+
   return (
     <View style={styles.container}>
       <WebViewScreen
         ref={webViewRef}
+        url={getInitialUrl()}
         onMessage={handleWebMessage}
         onNavigate={handleWebViewNavigate}
         onReady={handleWebViewReady}

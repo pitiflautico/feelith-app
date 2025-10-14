@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorScreen from './ErrorScreen';
@@ -225,7 +225,7 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady }, ref) 
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Show loading screen while WebView is loading */}
       {isLoading && (
         <LoadingScreen message="Loading..." />
@@ -309,6 +309,7 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady }, ref) 
         allowUniversalAccessFromFileURLs={false}
         // iOS specific
         allowsLinkPreview={false}
+        contentInsetAdjustmentBehavior="never"
         // Android specific
         mixedContentMode="compatibility"
         // Custom User-Agent to avoid Google OAuth blocking
@@ -317,7 +318,7 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady }, ref) 
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
       />
-    </SafeAreaView>
+    </View>
   );
 });
 
