@@ -22,9 +22,9 @@ export default function NewEntrySelector() {
   };
 
   const handleMoodEntry = () => {
-    console.log('[NewEntrySelector] Mood entry selected, navigating to home with parameter');
-    // Navigate to home and trigger mood entry modal via URL parameter
-    router.replace('/(tabs)/?openMoodEntry=1');
+    console.log('[NewEntrySelector] Mood entry selected, navigating to native create-mood screen');
+    // Navigate to native mood creation screen
+    router.push('/(tabs)/create-mood');
   };
 
   const handleSelfieEntry = () => {

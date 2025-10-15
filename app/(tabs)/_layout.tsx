@@ -113,6 +113,14 @@ export default function TabLayout() {
           href: null, // This makes it not appear in the tab bar
         }}
       />
+      {/* Hidden route for native mood creation */}
+      <Tabs.Screen
+        name="create-mood"
+        options={{
+          title: 'Create Mood',
+          href: null, // This makes it not appear in the tab bar
+        }}
+      />
       <Tabs.Screen
         name="settings"
         options={{
