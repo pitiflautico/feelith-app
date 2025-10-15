@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Modal } from 'react-native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import WebViewScreen from '../../src/screens/WebViewScreen';
 import SelfieCameraScreen from '../../src/screens/SelfieCameraScreen';
@@ -12,6 +13,7 @@ import { setWebViewNavigate, handleNotification, handleNotificationResponse } fr
 import { registerPushToken, unregisterPushToken } from '../../src/services/pushTokenService';
 import { share } from '../../src/services/sharingService';
 import { getInitialURL, addDeepLinkListener, handleDeepLink } from '../../src/services/deepLinkService';
+import tabEvents, { TAB_EVENTS } from '../../src/events/tabEvents';
 
 /**
  * Main Home Screen
@@ -22,6 +24,7 @@ import { getInitialURL, addDeepLinkListener, handleDeepLink } from '../../src/se
 export default function HomeScreen() {
   const { isLoggedIn, userId, userToken, isLoading, login, logout } = useAuth();
   const { isOnboarding, setIsOnboarding } = useOnboarding();
+  const route = useRoute();
   const notificationListener = useRef();
   const responseListener = useRef();
   const deepLinkListener = useRef();
@@ -29,6 +32,7 @@ export default function HomeScreen() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [webViewReady, setWebViewReady] = useState(false);
   const pendingInitialUrl = useRef(null);
+  const [webViewKey, setWebViewKey] = useState(0);
 
   // Debug: Log auth state changes
   useEffect(() => {
@@ -39,6 +43,19 @@ export default function HomeScreen() {
       isLoading
     });
   }, [isLoggedIn, userId, userToken, isLoading]);
+
+  /**
+   * Handle navigation params from tab bar
+   * When forceReload is true, completely reload the WebView
+   */
+  useEffect(() => {
+    const params = route.params || {};
+    if (params.forceReload && params.initialUrl) {
+      console.log('[HomeScreen] 🔄 Force reloading WebView with URL:', params.initialUrl);
+      // Increment key to force WebView remount (complete reload)
+      setWebViewKey((prev) => prev + 1);
+    }
+  }, [route.params]);
 
   /**
    * Initialize push notifications
@@ -162,6 +179,27 @@ export default function HomeScreen() {
     console.log('[HomeScreen] WebView is ready');
     setWebViewReady(true);
   };
+
+  /**
+   * Keep event listener for calendar-events (used by See All link in dashboard)
+   */
+  useEffect(() => {
+    const handleCalendarEventsPressed = () => {
+      console.log('[HomeScreen] Calendar events pressed, navigating to calendar events URL');
+      if (webViewRef.current?.navigateToUrl) {
+        const calendarEventsUrl = isLoggedIn && userToken
+          ? `${config.WEB_URL}/calendar-events?mobile=1`
+          : `${config.WEB_URL}/calendar-events`;
+        webViewRef.current.navigateToUrl(calendarEventsUrl);
+      }
+    };
+
+    tabEvents.on(TAB_EVENTS.CALENDAR_EVENTS_PRESSED, handleCalendarEventsPressed);
+
+    return () => {
+      tabEvents.off(TAB_EVENTS.CALENDAR_EVENTS_PRESSED, handleCalendarEventsPressed);
+    };
+  }, [isLoggedIn, userToken]);
 
   /**
    * Handle WebView navigation function registration
@@ -311,11 +349,22 @@ export default function HomeScreen() {
     );
   }
 
-  // Determine the initial URL based on login state
+  // Determine the initial URL based on login state and route params
   const getInitialUrl = () => {
+    const params = route.params || {};
+
+    // If forceReload with initialUrl, use that URL with session params if logged in
+    if (params.forceReload && params.initialUrl) {
+      const targetUrl = `${config.WEB_URL}${params.initialUrl}`;
+      if (isLoggedIn && userToken) {
+        return `${targetUrl}${params.initialUrl.includes('?') ? '&' : '?'}mobile=1`;
+      }
+      return targetUrl;
+    }
+
+    // Default behavior
     if (isLoggedIn && userToken) {
       // If logged in, load session establishment URL
-      // Check if we need to redirect to onboarding
       return `${config.WEB_URL}/auth/session?token=${userToken}`;
     }
     // Not logged in, load normal home page
@@ -325,6 +374,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <WebViewScreen
+        key={webViewKey}
         ref={webViewRef}
         url={getInitialUrl()}
         onMessage={handleWebMessage}

@@ -16,6 +16,13 @@ const config = {
    */
   WEB_URL: process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:8000' : 'https://feelith.com',
 
+  /**
+   * The API base URL for making API requests
+   * This is typically the WEB_URL + '/api'
+   * @example 'https://example.com/api'
+   */
+  API_URL: process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:8000/api' : 'https://feelith.com/api',
+
   // ===== App Information =====
 
   /**

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import {
   View,
   Text,
@@ -20,137 +20,37 @@ import useAuth from '../hooks/useAuth';
 import config from '../config/config';
 import { createMoodEntry } from '../services/moodService';
 
-// Mood SVG icons as XML strings
+// Mood SVG icons as XML strings (simplified - filters removed for native compatibility)
 const MOOD_ICONS = {
-  depressed: `<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_dd_25312_69365)">
-<path d="M12 40C12 17.9086 29.9086 0 52 0C74.0914 0 92 17.9086 92 40C92 62.0914 74.0914 80 52 80C29.9086 80 12 62.0914 12 40Z" fill="#C084FC"/>
-<path d="M34.3052 29.4024C35.7401 28.574 37.5748 29.0656 38.4033 30.5005C38.6666 30.9566 39.0453 31.3353 39.5013 31.5986C39.9574 31.8619 40.4747 32.0005 41.0013 32.0005C41.528 32.0005 42.0453 31.8619 42.5013 31.5986C42.9574 31.3353 43.3361 30.9566 43.5994 30.5005C44.4278 29.0656 46.2626 28.574 47.6975 29.4024C49.1324 30.2309 49.624 32.0656 48.7956 33.5005C48.0057 34.8687 46.8695 36.0048 45.5013 36.7947C44.1332 37.5846 42.5812 38.0005 41.0013 38.0005C39.4215 38.0005 37.8695 37.5846 36.5013 36.7947C35.1332 36.0048 33.997 34.8687 33.2071 33.5005C32.3787 32.0656 32.8703 30.2309 34.3052 29.4024Z" fill="#6B21A8"/>
-<path d="M56.3052 29.4024C57.7401 28.574 59.5748 29.0656 60.4033 30.5005C60.6666 30.9566 61.0453 31.3353 61.5013 31.5986C61.9574 31.8619 62.4747 32.0005 63.0013 32.0005C63.528 32.0005 64.0453 31.8619 64.5013 31.5986C64.9574 31.3353 65.3361 30.9566 65.5994 30.5005C66.4278 29.0656 68.2626 28.574 69.6975 29.4024C71.1324 30.2309 71.624 32.0656 70.7956 33.5005C70.0057 34.8687 68.8695 36.0048 67.5013 36.7947C66.1332 37.5846 64.5812 38.0005 63.0013 38.0005C61.4215 38.0005 59.8695 37.5846 58.5013 36.7947C57.1332 36.0048 55.997 34.8687 55.2071 33.5005C54.3787 32.0656 54.8703 30.2309 56.3052 29.4024Z" fill="#6B21A8"/>
-<path d="M52.0016 42.0005C49.3751 42.0005 46.7744 42.5178 44.3479 43.5229C41.9214 44.528 39.7166 46.0012 37.8594 47.8584C36.7154 49.0024 36.3732 50.7228 36.9923 52.2175C37.6115 53.7122 39.07 54.6868 40.6879 54.6868L63.3153 54.6868C64.9331 54.6868 66.3917 53.7122 67.0108 52.2175C67.6299 50.7228 67.2877 49.0024 66.1437 47.8584C64.2865 46.0012 62.0818 44.528 59.6552 43.5229C57.2287 42.5178 54.628 42.0005 52.0016 42.0005Z" fill="#6B21A8"/>
-</g>
-<defs>
-<filter id="filter0_dd_25312_69365" x="0" y="0" width="104" height="104" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="2" operator="erode" in="SourceAlpha" result="effect1_dropShadow_25312_69365"/>
-<feOffset dy="4"/>
-<feGaussianBlur stdDeviation="3"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.03 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_25312_69365"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect2_dropShadow_25312_69365"/>
-<feOffset dy="12"/>
-<feGaussianBlur stdDeviation="8"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.08 0"/>
-<feBlend mode="normal" in2="effect1_dropShadow_25312_69365" result="effect2_dropShadow_25312_69365"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_25312_69365" result="shape"/>
-</filter>
-</defs>
+  depressed: `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="40" cy="40" r="40" fill="#C084FC"/>
+<path d="M22.3052 29.4024C23.7401 28.574 25.5748 29.0656 26.4033 30.5005C26.6666 30.9566 27.0453 31.3353 27.5013 31.5986C27.9574 31.8619 28.4747 32.0005 29.0013 32.0005C29.528 32.0005 30.0453 31.8619 30.5013 31.5986C30.9574 31.3353 31.3361 30.9566 31.5994 30.5005C32.4278 29.0656 34.2626 28.574 35.6975 29.4024C37.1324 30.2309 37.624 32.0656 36.7956 33.5005C36.0057 34.8687 34.8695 36.0048 33.5013 36.7947C32.1332 37.5846 30.5812 38.0005 29.0013 38.0005C27.4215 38.0005 25.8695 37.5846 24.5013 36.7947C23.1332 36.0048 21.997 34.8687 21.2071 33.5005C20.3787 32.0656 20.8703 30.2309 22.3052 29.4024Z" fill="#6B21A8"/>
+<path d="M44.3052 29.4024C45.7401 28.574 47.5748 29.0656 48.4033 30.5005C48.6666 30.9566 49.0453 31.3353 49.5013 31.5986C49.9574 31.8619 50.4747 32.0005 51.0013 32.0005C51.528 32.0005 52.0453 31.8619 52.5013 31.5986C52.9574 31.3353 53.3361 30.9566 53.5994 30.5005C54.4278 29.0656 56.2626 28.574 57.6975 29.4024C59.1324 30.2309 59.624 32.0656 58.7956 33.5005C58.0057 34.8687 56.8695 36.0048 55.5013 36.7947C54.1332 37.5846 52.5812 38.0005 51.0013 38.0005C49.4215 38.0005 47.8695 37.5846 46.5013 36.7947C45.1332 36.0048 43.997 34.8687 43.2071 33.5005C42.3787 32.0656 42.8703 30.2309 44.3052 29.4024Z" fill="#6B21A8"/>
+<path d="M40.0016 42.0005C37.3751 42.0005 34.7744 42.5178 32.3479 43.5229C29.9214 44.528 27.7166 46.0012 25.8594 47.8584C24.7154 49.0024 24.3732 50.7228 24.9923 52.2175C25.6115 53.7122 27.07 54.6868 28.6879 54.6868L51.3153 54.6868C52.9331 54.6868 54.3917 53.7122 55.0108 52.2175C55.6299 50.7228 55.2877 49.0024 54.1437 47.8584C52.2865 46.0012 50.0818 44.528 47.6552 43.5229C45.2287 42.5178 42.628 42.0005 40.0016 42.0005Z" fill="#6B21A8"/>
 </svg>`,
-  sad: `<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_dd_25312_69463)">
-<path d="M12 40C12 17.9086 29.9086 0 52 0C74.0914 0 92 17.9086 92 40C92 62.0914 74.0914 80 52 80C29.9086 80 12 62.0914 12 40Z" fill="#FB923C"/>
-<path d="M46 33C46 30.2386 43.7614 28 41 28C38.2386 28 36 30.2386 36 33C36 35.7614 38.2386 38 41 38C43.7614 38 46 35.7614 46 33Z" fill="#9A3412"/>
-<path d="M44.3463 43.5224C46.7728 42.5173 49.3736 42 52 42C54.6264 42 57.2272 42.5173 59.6537 43.5224C62.0802 44.5275 64.285 46.0007 66.1421 47.8579C67.7042 49.42 67.7042 51.9526 66.1421 53.5147C64.58 55.0768 62.0474 55.0768 60.4853 53.5147C59.371 52.4004 58.0481 51.5165 56.5922 50.9134C55.1363 50.3104 53.5759 50 52 50C50.4241 50 48.8637 50.3104 47.4078 50.9135C45.9519 51.5165 44.629 52.4004 43.5147 53.5147C41.9526 55.0768 39.42 55.0768 37.8579 53.5147C36.2958 51.9526 36.2958 49.42 37.8579 47.8579C39.715 46.0007 41.9198 44.5275 44.3463 43.5224Z" fill="#9A3412"/>
-<path d="M63 28C65.7614 28 68 30.2386 68 33C68 35.7614 65.7614 38 63 38C60.2386 38 58 35.7614 58 33C58 30.2386 60.2386 28 63 28Z" fill="#9A3412"/>
-</g>
-<defs>
-<filter id="filter0_dd_25312_69463" x="0" y="0" width="104" height="104" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="2" operator="erode" in="SourceAlpha" result="effect1_dropShadow_25312_69463"/>
-<feOffset dy="4"/>
-<feGaussianBlur stdDeviation="3"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.03 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_25312_69463"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect2_dropShadow_25312_69463"/>
-<feOffset dy="12"/>
-<feGaussianBlur stdDeviation="8"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.08 0"/>
-<feBlend mode="normal" in2="effect1_dropShadow_25312_69463" result="effect2_dropShadow_25312_69463"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_25312_69463" result="shape"/>
-</filter>
-</defs>
+  sad: `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="40" cy="40" r="40" fill="#FB923C"/>
+<circle cx="29" cy="33" r="5" fill="#9A3412"/>
+<circle cx="51" cy="33" r="5" fill="#9A3412"/>
+<path d="M32.3463 43.5224C34.7728 42.5173 37.3736 42 40 42C42.6264 42 45.2272 42.5173 47.6537 43.5224C50.0802 44.5275 52.285 46.0007 54.1421 47.8579C55.7042 49.42 55.7042 51.9526 54.1421 53.5147C52.58 55.0768 50.0474 55.0768 48.4853 53.5147C47.371 52.4004 46.0481 51.5165 44.5922 50.9134C43.1363 50.3104 41.5759 50 40 50C38.4241 50 36.8637 50.3104 35.4078 50.9135C33.9519 51.5165 32.629 52.4004 31.5147 53.5147C29.9526 55.0768 27.42 55.0768 25.8579 53.5147C24.2958 51.9526 24.2958 49.42 25.8579 47.8579C27.715 46.0007 29.9198 44.5275 32.3463 43.5224Z" fill="#9A3412"/>
 </svg>`,
-  neutral: `<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_dd_25312_69467)">
-<path d="M12 40C12 17.9086 29.9086 0 52 0C74.0914 0 92 17.9086 92 40C92 62.0914 74.0914 80 52 80C29.9086 80 12 62.0914 12 40Z" fill="#B1865E"/>
-<path d="M46 33C46 30.2386 43.7614 28 41 28C38.2386 28 36 30.2386 36 33C36 35.7614 38.2386 38 41 38C43.7614 38 46 35.7614 46 33Z" fill="#533630"/>
-<path d="M68 33C68 30.2386 65.7614 28 63 28C60.2386 28 58 30.2386 58 33C58 35.7614 60.2386 38 63 38C65.7614 38 68 35.7614 68 33Z" fill="#533630"/>
-<path d="M52 56C49.3736 56 46.7728 55.4827 44.3463 54.4776C41.9198 53.4725 39.715 51.9993 37.8579 50.1421C36.2958 48.58 36.2958 46.0474 37.8579 44.4853C39.42 42.9232 41.9526 42.9232 43.5147 44.4853C44.629 45.5996 45.9519 46.4835 47.4078 47.0866C48.8637 47.6896 50.4241 48 52 48C53.5759 48 55.1363 47.6896 56.5922 47.0866C58.0481 46.4835 59.371 45.5996 60.4853 44.4853C62.0474 42.9232 64.58 42.9232 66.1421 44.4853C67.7042 46.0474 67.7042 48.58 66.1421 50.1421C64.285 51.9993 62.0802 53.4725 59.6537 54.4776C57.2272 55.4827 54.6264 56 52 56Z" fill="#533630"/>
-</g>
-<defs>
-<filter id="filter0_dd_25312_69467" x="0" y="0" width="104" height="104" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="2" operator="erode" in="SourceAlpha" result="effect1_dropShadow_25312_69467"/>
-<feOffset dy="4"/>
-<feGaussianBlur stdDeviation="3"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.03 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_25312_69467"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect2_dropShadow_25312_69467"/>
-<feOffset dy="12"/>
-<feGaussianBlur stdDeviation="8"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.08 0"/>
-<feBlend mode="normal" in2="effect1_dropShadow_25312_69467" result="effect2_dropShadow_25312_69467"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_25312_69467" result="shape"/>
-</filter>
-</defs>
+  neutral: `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="40" cy="40" r="40" fill="#B1865E"/>
+<circle cx="29" cy="33" r="5" fill="#533630"/>
+<circle cx="51" cy="33" r="5" fill="#533630"/>
+<path d="M40 56C37.3736 56 34.7728 55.4827 32.3463 54.4776C29.9198 53.4725 27.715 51.9993 25.8579 50.1421C24.2958 48.58 24.2958 46.0474 25.8579 44.4853C27.42 42.9232 29.9526 42.9232 31.5147 44.4853C32.629 45.5996 33.9519 46.4835 35.4078 47.0866C36.8637 47.6896 38.4241 48 40 48C41.5759 48 43.1363 47.6896 44.5922 47.0866C46.0481 46.4835 47.371 45.5996 48.4853 44.4853C50.0474 42.9232 52.58 42.9232 54.1421 44.4853C55.7042 46.0474 55.7042 48.58 54.1421 50.1421C52.285 51.9993 50.0802 53.4725 47.6537 54.4776C45.2272 55.4827 42.6264 56 40 56Z" fill="#533630"/>
 </svg>`,
-  happy: `<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_dd_25312_69471)">
-<path d="M12 40C12 17.9086 29.9086 0 52 0C74.0914 0 92 17.9086 92 40C92 62.0914 74.0914 80 52 80C29.9086 80 12 62.0914 12 40Z" fill="#FBBF24"/>
-<path d="M46 33C46 30.2386 43.7614 28 41 28C38.2386 28 36 30.2386 36 33C36 35.7614 38.2386 38 41 38C43.7614 38 46 35.7614 46 33Z" fill="#92400E"/>
-<path d="M68 33C68 30.2386 65.7614 28 63 28C60.2386 28 58 30.2386 58 33C58 35.7614 60.2386 38 63 38C65.7614 38 68 35.7614 68 33Z" fill="#92400E"/>
-<path d="M52 56C49.3736 56 46.7728 55.4827 44.3463 54.4776C41.9198 53.4725 39.715 51.9993 37.8579 50.1421C36.2958 48.58 36.2958 46.0474 37.8579 44.4853C39.42 42.9232 41.9526 42.9232 43.5147 44.4853C44.629 45.5996 45.9519 46.4835 47.4078 47.0866C48.8637 47.6896 50.4241 48 52 48C53.5759 48 55.1363 47.6896 56.5922 47.0866C58.0481 46.4835 59.371 45.5996 60.4853 44.4853C62.0474 42.9232 64.58 42.9232 66.1421 44.4853C67.7042 46.0474 67.7042 48.58 66.1421 50.1421C64.285 51.9993 62.0802 53.4725 59.6537 54.4776C57.2272 55.4827 54.6264 56 52 56Z" fill="#92400E"/>
-</g>
-<defs>
-<filter id="filter0_dd_25312_69471" x="0" y="0" width="104" height="104" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="2" operator="erode" in="SourceAlpha" result="effect1_dropShadow_25312_69471"/>
-<feOffset dy="4"/>
-<feGaussianBlur stdDeviation="3"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.03 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_25312_69471"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect2_dropShadow_25312_69471"/>
-<feOffset dy="12"/>
-<feGaussianBlur stdDeviation="8"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.08 0"/>
-<feBlend mode="normal" in2="effect1_dropShadow_25312_69471" result="effect2_dropShadow_25312_69471"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_25312_69471" result="shape"/>
-</filter>
-</defs>
+  happy: `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="40" cy="40" r="40" fill="#FBBF24"/>
+<circle cx="29" cy="33" r="5" fill="#92400E"/>
+<circle cx="51" cy="33" r="5" fill="#92400E"/>
+<path d="M40 56C37.3736 56 34.7728 55.4827 32.3463 54.4776C29.9198 53.4725 27.715 51.9993 25.8579 50.1421C24.2958 48.58 24.2958 46.0474 25.8579 44.4853C27.42 42.9232 29.9526 42.9232 31.5147 44.4853C32.629 45.5996 33.9519 46.4835 35.4078 47.0866C36.8637 47.6896 38.4241 48 40 48C41.5759 48 43.1363 47.6896 44.5922 47.0866C46.0481 46.4835 47.371 45.5996 48.4853 44.4853C50.0474 42.9232 52.58 42.9232 54.1421 44.4853C55.7042 46.0474 55.7042 48.58 54.1421 50.1421C52.285 51.9993 50.0802 53.4725 47.6537 54.4776C45.2272 55.4827 42.6264 56 40 56Z" fill="#92400E"/>
 </svg>`,
-  great: `<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_dd_25312_69569)">
-<path d="M12 40C12 17.9086 29.9086 0 52 0C74.0914 0 92 17.9086 92 40C92 62.0914 74.0914 80 52 80C29.9086 80 12 62.0914 12 40Z" fill="#9BB167"/>
-<path d="M34.3052 37.5981C35.7401 38.4265 37.5748 37.9349 38.4033 36.5C38.6666 36.0439 39.0453 35.6652 39.5013 35.4019C39.9574 35.1386 40.4747 35 41.0013 35C41.528 35 42.0453 35.1386 42.5013 35.4019C42.9574 35.6652 43.3361 36.0439 43.5994 36.5C44.4278 37.9349 46.2626 38.4265 47.6975 37.5981C49.1324 36.7696 49.624 34.9349 48.7956 33.5C48.0057 32.1318 46.8695 30.9957 45.5013 30.2058C44.1332 29.4159 42.5812 29 41.0013 29C39.4215 29 37.8695 29.4159 36.5013 30.2058C35.1332 30.9957 33.997 32.1318 33.2071 33.5C32.3787 34.9349 32.8703 36.7696 34.3052 37.5981Z" fill="#3F4B29"/>
-<path d="M56.3052 37.5981C57.7401 38.4265 59.5748 37.9349 60.4033 36.5C60.6666 36.0439 61.0453 35.6652 61.5013 35.4019C61.9574 35.1386 62.4747 35 63.0013 35C63.528 35 64.0453 35.1386 64.5013 35.4019C64.9574 35.6652 65.3361 36.0439 65.5994 36.5C66.4278 37.9349 68.2626 38.4265 69.6975 37.5981C71.1324 36.7696 71.624 34.9349 70.7956 33.5C70.0057 32.1318 68.8695 30.9957 67.5013 30.2058C66.1332 29.4159 64.5812 29 63.0013 29C61.4215 29 59.8695 29.4159 58.5013 30.2058C57.1332 30.9957 55.997 32.1318 55.2071 33.5C54.3787 34.9349 54.8703 36.7696 56.3052 37.5981Z" fill="#3F4B29"/>
-<path d="M52.0016 56C49.3751 56 46.7744 55.4827 44.3479 54.4776C41.9214 53.4725 39.7166 51.9993 37.8594 50.1421C36.7154 48.9981 36.3732 47.2777 36.9923 45.783C37.6115 44.2883 39.07 43.3137 40.6879 43.3137L63.3153 43.3137C64.9331 43.3137 66.3917 44.2883 67.0108 45.783C67.6299 47.2777 67.2877 48.9981 66.1437 50.1421C64.2865 51.9993 62.0818 53.4725 59.6552 54.4776C57.2287 55.4827 54.628 56 52.0016 56Z" fill="#3F4B29"/>
-</g>
-<defs>
-<filter id="filter0_dd_25312_69569" x="0" y="0" width="104" height="104" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="2" operator="erode" in="SourceAlpha" result="effect1_dropShadow_25312_69569"/>
-<feOffset dy="4"/>
-<feGaussianBlur stdDeviation="3"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.03 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_25312_69569"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect2_dropShadow_25312_69569"/>
-<feOffset dy="12"/>
-<feGaussianBlur stdDeviation="8"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.160784 0 0 0 0 0.145098 0 0 0 0 0.141176 0 0 0 0.08 0"/>
-<feBlend mode="normal" in2="effect1_dropShadow_25312_69569" result="effect2_dropShadow_25312_69569"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_25312_69569" result="shape"/>
-</filter>
-</defs>
+  great: `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="40" cy="40" r="40" fill="#9BB167"/>
+<path d="M22.3052 37.5981C23.7401 38.4265 25.5748 37.9349 26.4033 36.5C26.6666 36.0439 27.0453 35.6652 27.5013 35.4019C27.9574 35.1386 28.4747 35 29.0013 35C29.528 35 30.0453 35.1386 30.5013 35.4019C30.9574 35.6652 31.3361 36.0439 31.5994 36.5C32.4278 37.9349 34.2626 38.4265 35.6975 37.5981C37.1324 36.7696 37.624 34.9349 36.7956 33.5C36.0057 32.1318 34.8695 30.9957 33.5013 30.2058C32.1332 29.4159 30.5812 29 29.0013 29C27.4215 29 25.8695 29.4159 24.5013 30.2058C23.1332 30.9957 21.997 32.1318 21.2071 33.5C20.3787 34.9349 20.8703 36.7696 22.3052 37.5981Z" fill="#3F4B29"/>
+<path d="M44.3052 37.5981C45.7401 38.4265 47.5748 37.9349 48.4033 36.5C48.6666 36.0439 49.0453 35.6652 49.5013 35.4019C49.9574 35.1386 50.4747 35 51.0013 35C51.528 35 52.0453 35.1386 52.5013 35.4019C52.9574 35.6652 53.3361 36.0439 53.5994 36.5C54.4278 37.9349 56.2626 38.4265 57.6975 37.5981C59.1324 36.7696 59.624 34.9349 58.7956 33.5C58.0057 32.1318 56.8695 30.9957 55.5013 30.2058C54.1332 29.4159 52.5812 29 51.0013 29C49.4215 29 47.8695 29.4159 46.5013 30.2058C45.1332 30.9957 43.997 32.1318 43.2071 33.5C42.3787 34.9349 42.8703 36.7696 44.3052 37.5981Z" fill="#3F4B29"/>
+<path d="M40.0016 56C37.3751 56 34.7744 55.4827 32.3479 54.4776C29.9214 53.4725 27.7166 51.9993 25.8594 50.1421C24.7154 48.9981 24.3732 47.2777 24.9923 45.783C25.6115 44.2883 27.07 43.3137 28.6879 43.3137L51.3153 43.3137C52.9331 43.3137 54.3917 44.2883 55.0108 45.783C55.6299 47.2777 55.2877 48.9981 54.1437 50.1421C52.2865 51.9993 50.0818 53.4725 47.6552 54.4776C45.2287 55.4827 42.628 56 40.0016 56Z" fill="#3F4B29"/>
 </svg>`,
 };
 
@@ -162,6 +62,82 @@ const MOODS = [
   { id: 5, score: 9, name: 'great', icon: 'great', color: '#9BB167' },
 ];
 
+// Memoized SVG Icon Component - only re-renders when icon or size changes
+const MoodIcon = memo(({ icon, width, height }) => {
+  return <SvgXml xml={MOOD_ICONS[icon]} width={width} height={height} />;
+}, (prevProps, nextProps) => {
+  // Only re-render if icon, width, or height changes
+  return prevProps.icon === nextProps.icon &&
+         prevProps.width === nextProps.width &&
+         prevProps.height === nextProps.height;
+});
+
+// Memoized Mood Display Component - only re-renders when selectedMood changes
+const MoodDisplay = memo(({ selectedMood }) => {
+  return (
+    <View style={styles.moodDisplay}>
+      {selectedMood ? (
+        <MoodIcon
+          icon={selectedMood.icon}
+          width={120}
+          height={120}
+        />
+      ) : (
+        <View style={styles.placeholderIcon}>
+          <IconSymbol name="face.smiling" size={60} color="#9CA3AF" />
+        </View>
+      )}
+    </View>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if selectedMood changes
+  return prevProps.selectedMood?.id === nextProps.selectedMood?.id;
+});
+
+// Memoized Mood Button Component - only re-renders when selection changes
+const MoodButton = memo(({ mood, isSelected, onPress }) => {
+  return (
+    <TouchableOpacity
+      style={styles.moodButton}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[!isSelected && styles.moodIconGrayscale]}>
+        <MoodIcon
+          icon={mood.icon}
+          width={56}
+          height={56}
+        />
+      </View>
+    </TouchableOpacity>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if mood or selection state changes
+  return prevProps.mood.id === nextProps.mood.id &&
+         prevProps.isSelected === nextProps.isSelected;
+});
+
+// Memoized Mood Selector Component - only re-renders when selectedMood changes
+const MoodSelector = memo(({ moods, selectedMood, onMoodSelect }) => {
+  return (
+    <View style={styles.moodSelectorContainer}>
+      <View style={styles.moodSelector}>
+        {moods.map((mood) => (
+          <MoodButton
+            key={mood.id}
+            mood={mood}
+            isSelected={selectedMood?.id === mood.id}
+            onPress={() => onMoodSelect(mood)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if selectedMood changes
+  return prevProps.selectedMood?.id === nextProps.selectedMood?.id;
+});
+
 /**
  * MoodEntryScreen Component
  *
@@ -169,7 +145,7 @@ const MOODS = [
  * Features:
  * - Mood selection (1-10 scale visualized as 5 moods)
  * - Text note input (300 characters)
- * - Audio recording
+ * - Speech-to-text recording
  * - Save to API
  */
 export default function MoodEntryScreen() {
@@ -319,19 +295,7 @@ export default function MoodEntryScreen() {
         <Text style={styles.title}>How's Your Mood?</Text>
 
         {/* Selected Mood Display */}
-        <View style={styles.moodDisplay}>
-          {selectedMood ? (
-            <SvgXml
-              xml={MOOD_ICONS[selectedMood.icon]}
-              width={120}
-              height={120}
-            />
-          ) : (
-            <View style={styles.placeholderIcon}>
-              <IconSymbol name="face.smiling" size={60} color="#9CA3AF" />
-            </View>
-          )}
-        </View>
+        <MoodDisplay selectedMood={selectedMood} />
 
         {/* Mood Text */}
         <Text style={styles.moodText}>I feel {getMoodName()}.</Text>
@@ -349,32 +313,19 @@ export default function MoodEntryScreen() {
               value={note}
               onChangeText={setNote}
               textAlignVertical="top"
+              enablesReturnKeyAutomatically={false}
+              keyboardAppearance="light"
             />
             <Text style={styles.charCount}>{note.length}/300</Text>
           </View>
         </View>
 
         {/* Mood Selector - White rounded container */}
-        <View style={styles.moodSelectorContainer}>
-          <View style={styles.moodSelector}>
-            {MOODS.map((mood) => (
-              <TouchableOpacity
-                key={mood.id}
-                style={styles.moodButton}
-                onPress={() => handleMoodSelect(mood)}
-                activeOpacity={0.7}
-              >
-                <View style={[selectedMood?.id !== mood.id && styles.moodIconGrayscale]}>
-                  <SvgXml
-                    xml={MOOD_ICONS[mood.icon]}
-                    width={56}
-                    height={56}
-                  />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        <MoodSelector
+          moods={MOODS}
+          selectedMood={selectedMood}
+          onMoodSelect={handleMoodSelect}
+        />
       </ScrollView>
 
       {/* Bottom Actions */}
