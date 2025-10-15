@@ -35,6 +35,7 @@ module.exports = {
       infoPlist: {
         NSMicrophoneUsageDescription: 'Allow $(PRODUCT_NAME) to access your microphone to record voice notes for your mood entries.',
         NSSpeechRecognitionUsageDescription: 'Allow $(PRODUCT_NAME) to use speech recognition to convert your voice notes to text.',
+        ITSAppUsesNonExemptEncryption: false,
       },
       // Universal Links - automatically added if ASSOCIATED_DOMAINS is configured
       ...(config.ASSOCIATED_DOMAINS.length > 0 && {
@@ -95,6 +96,7 @@ module.exports = {
     // ===== PLUGINS =====
     plugins: [
       'expo-router',
+      'expo-dev-client',
       [
         'expo-splash-screen',
         {
@@ -129,6 +131,13 @@ module.exports = {
     experiments: {
       typedRoutes: true,
       reactCompiler: true,
+    },
+
+    // ===== EAS CONFIGURATION =====
+    extra: {
+      eas: {
+        projectId: config.EXPO_PROJECT_ID,
+      },
     },
   },
 };

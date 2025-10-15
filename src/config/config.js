@@ -14,14 +14,14 @@ const config = {
    * Change this to your web application URL for each new app
    * @example 'https://example.com'
    */
-  WEB_URL: process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:8000' : 'https://feelith.com',
+  WEB_URL: process.env.NODE_ENV !== 'production' ? 'http://192.168.86.222:8000' : 'https://feelith.com',
 
   /**
    * The API base URL for making API requests
    * This is typically the WEB_URL + '/api'
    * @example 'https://example.com/api'
    */
-  API_URL: process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:8000/api' : 'https://feelith.com/api',
+  API_URL: process.env.NODE_ENV !== 'production' ? 'http://192.168.86.222:8000/api' : 'https://feelith.com/api',
 
   // ===== App Information =====
 
@@ -92,7 +92,7 @@ const config = {
    * Required for push notifications to work in production
    * @example 'abc123-def456-ghi789'
    */
-  EXPO_PROJECT_ID: '19f6a466-105c-4e0a-b68b-ab137a815607',
+  EXPO_PROJECT_ID: 'a894459a-a5cb-4254-b8e3-0e4a7d99eb71',
 
   /**
    * Push notification retry configuration
