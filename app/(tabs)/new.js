@@ -16,13 +16,15 @@ export default function NewEntrySelector() {
   const router = useRouter();
 
   const handleClose = () => {
+    console.log('[NewEntrySelector] Closing selector, navigating to home');
     // Navigate back to the previous tab (index/home)
-    router.push('/(tabs)');
+    router.replace('/(tabs)/');
   };
 
   const handleMoodEntry = () => {
+    console.log('[NewEntrySelector] Mood entry selected, navigating to home with parameter');
     // Navigate to home and trigger mood entry modal via URL parameter
-    router.push('/(tabs)/?openMoodEntry=1');
+    router.replace('/(tabs)/?openMoodEntry=1');
   };
 
   const handleSelfieEntry = () => {
