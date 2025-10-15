@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Platform, BackHandler } from 'react-native';
 import { WebView } from 'react-native-webview';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorScreen from './ErrorScreen';
@@ -25,6 +25,7 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
   const [key, setKey] = useState(0); // Used to force re-render on retry
   const [currentUrl, setCurrentUrl] = useState(url || config.WEB_URL);
   const [isReady, setIsReady] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
 
   const webUrl = currentUrl;
 
@@ -103,6 +104,9 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
     if (config.DEBUG) {
       console.log('[WebView] Navigation state changed:', navState.url);
     }
+
+    // Update canGoBack state
+    setCanGoBack(navState.canGoBack);
 
     // Notify parent of URL change
     if (onUrlChange) {
@@ -226,6 +230,24 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
       onNavigate(navigateToUrl);
     }
   }, [onNavigate]);
+
+  // Handle Android back button
+  useEffect(() => {
+    const backAction = () => {
+      if (canGoBack && webViewRef.current) {
+        webViewRef.current.goBack();
+        return true; // Prevent default behavior (exiting the app)
+      }
+      return false; // Let default behavior happen (exit the app or go to previous screen)
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [canGoBack]);
 
   // Show error screen if there's an error
   if (hasError) {
