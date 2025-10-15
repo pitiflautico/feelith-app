@@ -125,9 +125,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingBottom: 40,
+    paddingTop: 0,
     // Leave space for the floating tab bar
-    marginBottom: config.LAYOUT.MODAL_BOTTOM_MARGIN,
+    paddingBottom: 40 + config.LAYOUT.MODAL_BOTTOM_MARGIN,
   },
   modalHeader: {
     flexDirection: 'row',

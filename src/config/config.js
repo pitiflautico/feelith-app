@@ -14,7 +14,7 @@ const config = {
    * Change this to your web application URL for each new app
    * @example 'https://example.com'
    */
-  WEB_URL: __DEV__ ? 'https://feelith.com' : 'https://feelith.com',
+  WEB_URL: __DEV__ ? 'http://127.0.0.1:8000' : 'https://feelith.com',
 
   // ===== App Information =====
 
@@ -146,21 +146,11 @@ const config = {
   },
 
   /**
-   * Layout constants for native tab bar spacing
-   * These ensure WebView and modals leave space for the floating bottom tab bar
+   * Layout dimensions
    */
   LAYOUT: {
-    /**
-     * Height to reserve at bottom of WebView for the tab bar
-     * This includes the tab bar height plus safe area insets
-     */
-    TAB_BAR_HEIGHT: 100,
-
-    /**
-     * Bottom margin for modals/popups that appear from bottom
-     * Ensures they don't overlap with the floating tab bar
-     */
-    MODAL_BOTTOM_MARGIN: 90,
+    TAB_BAR_HEIGHT: 70,        // Height of the floating tab bar
+    MODAL_BOTTOM_MARGIN: 70,   // Bottom margin for modals to sit above tab bar
   },
 
   /**
