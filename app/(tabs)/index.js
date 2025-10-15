@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import WebViewScreen from '../../src/screens/WebViewScreen';
 import SelfieCameraScreen from '../../src/screens/SelfieCameraScreen';
-import FloatingActionButton from '../../src/components/FloatingActionButton';
+// FloatingActionButton removed - now using tab bar center button
 import useAuth from '../../src/hooks/useAuth';
 import { useOnboarding } from '../../src/contexts/OnboardingContext';
 import config from '../../src/config/config';
@@ -107,13 +107,13 @@ export default function HomeScreen() {
           pendingInitialUrl.current = initialUrl;
 
           // If WebView is already ready, handle immediately
-          if (webViewReady && webViewRef.current) {
+          if (webViewReady && webViewRef.current && webViewRef.current.navigateToUrl) {
             const navigateFn = webViewRef.current.navigateToUrl;
-            if (navigateFn) {
-              console.log('[HomeScreen] WebView ready, handling initial URL immediately');
-              handleDeepLink(initialUrl, navigateFn);
-              pendingInitialUrl.current = null;
-            }
+            console.log('[HomeScreen] WebView ready, handling initial URL immediately');
+            handleDeepLink(initialUrl, navigateFn);
+            pendingInitialUrl.current = null;
+          } else {
+            console.log('[HomeScreen] WebView not ready yet, URL will be processed when ready');
           }
         }
       } catch (error) {
@@ -123,11 +123,11 @@ export default function HomeScreen() {
 
     // Handle URL when app is already open
     deepLinkListener.current = addDeepLinkListener((url) => {
-      if (webViewRef.current) {
+      if (webViewRef.current && webViewRef.current.navigateToUrl) {
         const navigateFn = webViewRef.current.navigateToUrl;
-        if (navigateFn) {
-          handleDeepLink(url, navigateFn);
-        }
+        handleDeepLink(url, navigateFn);
+      } else {
+        console.warn('[HomeScreen] Deep link received but WebView is not ready:', url);
       }
     });
 
@@ -147,13 +147,11 @@ export default function HomeScreen() {
    * Process any pending deep links when WebView becomes ready
    */
   useEffect(() => {
-    if (webViewReady && pendingInitialUrl.current && webViewRef.current) {
+    if (webViewReady && pendingInitialUrl.current && webViewRef.current && webViewRef.current.navigateToUrl) {
       const navigateFn = webViewRef.current.navigateToUrl;
-      if (navigateFn) {
-        console.log('[HomeScreen] WebView ready, processing pending URL:', pendingInitialUrl.current);
-        handleDeepLink(pendingInitialUrl.current, navigateFn);
-        pendingInitialUrl.current = null;
-      }
+      console.log('[HomeScreen] WebView ready, processing pending URL:', pendingInitialUrl.current);
+      handleDeepLink(pendingInitialUrl.current, navigateFn);
+      pendingInitialUrl.current = null;
     }
   }, [webViewReady]);
 
@@ -317,6 +315,7 @@ export default function HomeScreen() {
   const getInitialUrl = () => {
     if (isLoggedIn && userToken) {
       // If logged in, load session establishment URL
+      // Check if we need to redirect to onboarding
       return `${config.WEB_URL}/auth/session?token=${userToken}`;
     }
     // Not logged in, load normal home page
@@ -333,13 +332,6 @@ export default function HomeScreen() {
         onReady={handleWebViewReady}
         onUrlChange={handleUrlChange}
       />
-      {!isOnboarding && (
-        <FloatingActionButton
-          isLoggedIn={isLoggedIn}
-          onNavigate={webViewNavigate}
-          onCameraOpen={handleCameraOpen}
-        />
-      )}
 
       {/* Camera Modal */}
       <Modal
