@@ -146,6 +146,24 @@ const config = {
   },
 
   /**
+   * Layout constants for native tab bar spacing
+   * These ensure WebView and modals leave space for the floating bottom tab bar
+   */
+  LAYOUT: {
+    /**
+     * Height to reserve at bottom of WebView for the tab bar
+     * This includes the tab bar height plus safe area insets
+     */
+    TAB_BAR_HEIGHT: 100,
+
+    /**
+     * Bottom margin for modals/popups that appear from bottom
+     * Ensures they don't overlap with the floating tab bar
+     */
+    MODAL_BOTTOM_MARGIN: 90,
+  },
+
+  /**
    * Error messages
    */
   ERROR_MESSAGES: {

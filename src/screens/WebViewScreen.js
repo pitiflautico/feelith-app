@@ -271,6 +271,13 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
               // Set a flag to indicate we're in the native app
               window.__RUNNING_IN_NATIVE_APP__ = true;
 
+              // Set native tab bar height CSS variable
+              // This allows the web content to reserve space for the floating tab bar
+              if (document.documentElement) {
+                document.documentElement.style.setProperty('--native-tab-bar-height', '100px');
+                console.log('[WebView] Native tab bar height set to 100px');
+              }
+
               // Intercept console.log to send logs to React Native
               const originalLog = console.log;
               const originalError = console.error;
@@ -346,6 +353,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: config.COLORS.BACKGROUND,
+    // Reserve space at bottom for the floating tab bar
+    paddingBottom: config.LAYOUT.TAB_BAR_HEIGHT,
   },
   webview: {
     flex: 1,

@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import useAuth from '../../src/hooks/useAuth';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import config from '../../src/config/config';
 
 /**
  * New Entry Selector Screen
@@ -38,12 +39,15 @@ export default function NewEntrySelector() {
 
   return (
     <View style={styles.container}>
-      {/* Backdrop */}
+      {/* Backdrop - doesn't cover tab bar area */}
       <TouchableOpacity
         style={styles.backdrop}
         activeOpacity={1}
         onPress={handleClose}
       />
+
+      {/* Bottom spacer with app background color */}
+      <View style={styles.bottomSpacer} />
 
       {/* Modal Content */}
       <View style={styles.modalContainer}>
@@ -104,14 +108,24 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: config.LAYOUT.MODAL_BOTTOM_MARGIN,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  bottomSpacer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: config.LAYOUT.MODAL_BOTTOM_MARGIN,
+    backgroundColor: config.COLORS.BACKGROUND,
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 40,
+    // Leave space for the floating tab bar
+    marginBottom: config.LAYOUT.MODAL_BOTTOM_MARGIN,
   },
   modalHeader: {
     flexDirection: 'row',
