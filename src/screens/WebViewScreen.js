@@ -249,7 +249,12 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
       <WebView
         key={key}
         ref={webViewRef}
-        source={{ uri: webUrl }}
+        source={{
+          uri: webUrl,
+          headers: {
+            'X-Native-App': 'true'
+          }
+        }}
         style={styles.webview}
         onMessage={handleMessage}
         onLoadStart={handleLoadStart}

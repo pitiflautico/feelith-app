@@ -1,86 +1,177 @@
-import React, { useRef } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import WebViewScreen from '../../src/screens/WebViewScreen';
 import useAuth from '../../src/hooks/useAuth';
-import config from '../../src/config/config';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
 /**
- * New Mood Entry Screen
+ * New Entry Selector Screen
  *
  * Modal that opens when user taps the + button
- * Shows the mood entry form from the web app
+ * Shows options to create a new mood or take a selfie
  */
-export default function NewMoodScreen() {
-  const { isLoggedIn, userToken } = useAuth();
-  const webViewRef = useRef(null);
+export default function NewEntrySelector() {
+  const { isLoggedIn } = useAuth();
   const router = useRouter();
 
-  const getMoodEntryUrl = () => {
-    if (isLoggedIn && userToken) {
-      // This would open the mood entry modal/form in the web app
-      return `${config.WEB_URL}/dashboard?mobile=1&openMoodEntry=1`;
-    }
-    return `${config.WEB_URL}`;
+  const handleClose = () => {
+    // Navigate back to the previous tab (index/home)
+    router.push('/(tabs)');
   };
 
-  const handleClose = () => {
-    router.back();
+  const handleMoodEntry = () => {
+    // Navigate to home and trigger mood entry modal via URL parameter
+    router.push('/(tabs)/?openMoodEntry=1');
   };
+
+  const handleSelfieEntry = () => {
+    // TODO: Open selfie camera
+    // For now, just close the modal
+    console.log('[NewEntrySelector] Selfie option selected');
+    handleClose();
+  };
+
+  if (!isLoggedIn) {
+    handleClose();
+    return null;
+  }
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={true}
-      onRequestClose={handleClose}
-    >
+    <View style={styles.container}>
+      {/* Backdrop */}
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        onPress={handleClose}
+      />
+
+      {/* Modal Content */}
       <View style={styles.modalContainer}>
+        {/* Header */}
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>New Mood Entry</Text>
+          <Text style={styles.modalTitle}>Create New</Text>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <IconSymbol name="xmark" size={24} color="#000" />
           </TouchableOpacity>
         </View>
-        <View style={styles.webViewContainer}>
-          <WebViewScreen
-            ref={webViewRef}
-            url={getMoodEntryUrl()}
-          />
+
+        {/* Options */}
+        <View style={styles.optionsContainer}>
+          {/* Mood Entry Option */}
+          <TouchableOpacity
+            style={styles.optionButton}
+            onPress={handleMoodEntry}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, styles.moodIconBg]}>
+              <IconSymbol name="face.smiling" size={32} color="#FFFFFF" />
+            </View>
+            <View style={styles.optionTextContainer}>
+              <Text style={styles.optionTitle}>New Mood</Text>
+              <Text style={styles.optionDescription}>Track how you're feeling</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          {/* Selfie Option */}
+          <TouchableOpacity
+            style={styles.optionButton}
+            onPress={handleSelfieEntry}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, styles.selfieIconBg]}>
+              <IconSymbol name="camera.fill" size={32} color="#FFFFFF" />
+            </View>
+            <View style={styles.optionTextContainer}>
+              <Text style={styles.optionTitle}>New Selfie</Text>
+              <Text style={styles.optionDescription}>Capture your moment</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  container: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
     backgroundColor: '#FFFFFF',
-    marginTop: 50,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 20,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
   },
   closeButton: {
-    padding: 5,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  webViewContainer: {
+  optionsContainer: {
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  moodIconBg: {
+    backgroundColor: '#92400E', // Amber/brown color
+  },
+  selfieIconBg: {
+    backgroundColor: '#7C3AED', // Purple color
+  },
+  optionTextContainer: {
     flex: 1,
+  },
+  optionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  optionDescription: {
+    fontSize: 14,
+    color: '#6B7280',
   },
 });
