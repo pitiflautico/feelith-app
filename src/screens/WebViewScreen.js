@@ -4,6 +4,7 @@ import { WebView } from 'react-native-webview';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorScreen from './ErrorScreen';
 import config from '../config/config';
+import { useOnboarding } from '../contexts/OnboardingContext';
 
 /**
  * WebViewScreen Component
@@ -26,6 +27,7 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
   const [currentUrl, setCurrentUrl] = useState(url || config.WEB_URL);
   const [isReady, setIsReady] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
+  const { isOnboarding } = useOnboarding();
 
   const webUrl = currentUrl;
 
@@ -261,7 +263,7 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, !isOnboarding && styles.containerWithTabBar]}>
       {/* Show loading screen while WebView is loading */}
       {isLoading && (
         <LoadingScreen message="Loading..." />
@@ -375,7 +377,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: config.COLORS.BACKGROUND,
-    // Reserve space at bottom for the floating tab bar
+  },
+  containerWithTabBar: {
+    // Reserve space at bottom for the floating tab bar (only when not in onboarding)
     paddingBottom: config.LAYOUT.TAB_BAR_HEIGHT,
   },
   webview: {

@@ -14,7 +14,7 @@ const config = {
    * Change this to your web application URL for each new app
    * @example 'https://example.com'
    */
-  WEB_URL: __DEV__ ? 'http://127.0.0.1:8000' : 'https://feelith.com',
+  WEB_URL: process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:8000' : 'https://feelith.com',
 
   // ===== App Information =====
 
@@ -167,12 +167,12 @@ const config = {
   /**
    * Enable debug logging (set to false in production)
    */
-  DEBUG: __DEV__,
+  DEBUG: process.env.NODE_ENV !== 'production',
 
   /**
    * Show detailed error information in UI (only in dev mode)
    */
-  SHOW_DEV_ERRORS: __DEV__,
+  SHOW_DEV_ERRORS: process.env.NODE_ENV !== 'production',
 };
 
 module.exports = config;

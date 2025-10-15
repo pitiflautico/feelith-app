@@ -32,6 +32,10 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: config.IOS_BUNDLE_ID,
+      infoPlist: {
+        NSMicrophoneUsageDescription: 'Allow $(PRODUCT_NAME) to access your microphone to record voice notes for your mood entries.',
+        NSSpeechRecognitionUsageDescription: 'Allow $(PRODUCT_NAME) to use speech recognition to convert your voice notes to text.',
+      },
       // Universal Links - automatically added if ASSOCIATED_DOMAINS is configured
       ...(config.ASSOCIATED_DOMAINS.length > 0 && {
         associatedDomains: config.ASSOCIATED_DOMAINS.map(
@@ -43,6 +47,9 @@ module.exports = {
     // ===== ANDROID CONFIGURATION =====
     android: {
       package: config.ANDROID_PACKAGE,
+      permissions: [
+        'RECORD_AUDIO',
+      ],
       adaptiveIcon: {
         backgroundColor: '#E6F4FE',
         foregroundImage: './assets/images/android-icon-foreground.png',

@@ -13,12 +13,12 @@ import {
   Keyboard,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Audio } from 'expo-av';
+import Voice from '@react-native-voice/voice';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SvgXml } from 'react-native-svg';
 import useAuth from '../hooks/useAuth';
 import config from '../config/config';
-import { createMoodEntry, uploadMoodAudio } from '../services/moodService';
+import { createMoodEntry } from '../services/moodService';
 
 // Mood SVG icons as XML strings
 const MOOD_ICONS = {
@@ -180,25 +180,40 @@ export default function MoodEntryScreen() {
   const [selectedMood, setSelectedMood] = useState(null);
   const [note, setNote] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState(null);
-  const [audioUri, setAudioUri] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Request audio permissions on mount
+  // Set up Voice speech recognition event handlers
   useEffect(() => {
-    requestAudioPermissions();
-  }, []);
+    Voice.onSpeechStart = () => {
+      console.log('[MoodEntry] Speech recognition started');
+      setIsRecording(true);
+    };
 
-  const requestAudioPermissions = async () => {
-    try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Audio recording permission is required to record voice notes.');
+    Voice.onSpeechEnd = () => {
+      console.log('[MoodEntry] Speech recognition ended');
+      setIsRecording(false);
+    };
+
+    Voice.onSpeechResults = (event) => {
+      console.log('[MoodEntry] Speech recognized:', event.value);
+      if (event.value && event.value.length > 0) {
+        const transcript = event.value[0];
+        // Replace the note with the latest transcript instead of accumulating
+        setNote(transcript);
       }
-    } catch (error) {
-      console.error('[MoodEntry] Error requesting audio permissions:', error);
-    }
-  };
+    };
+
+    Voice.onSpeechError = (event) => {
+      console.error('[MoodEntry] Speech recognition error:', event.error);
+      setIsRecording(false);
+      Alert.alert('Error', 'Failed to recognize speech. Please try again.');
+    };
+
+    // Cleanup on unmount
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
 
   const handleClose = () => {
     router.replace('/(tabs)/');
@@ -211,57 +226,25 @@ export default function MoodEntryScreen() {
 
   const handleStartRecording = async () => {
     try {
-      console.log('[MoodEntry] Starting recording...');
-
-      // Stop and unload if already recording
-      if (recording) {
-        await recording.stopAndUnloadAsync();
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      setRecording(newRecording);
+      console.log('[MoodEntry] Starting speech recognition...');
       setIsRecording(true);
-      console.log('[MoodEntry] Recording started');
+
+      await Voice.start('es-ES');  // Spanish language
 
     } catch (error) {
-      console.error('[MoodEntry] Failed to start recording:', error);
-      Alert.alert('Error', 'Failed to start recording');
+      console.error('[MoodEntry] Failed to start speech recognition:', error);
+      setIsRecording(false);
+      Alert.alert('Error', 'Failed to start speech recognition');
     }
   };
 
   const handleStopRecording = async () => {
     try {
-      console.log('[MoodEntry] Stopping recording...');
-
-      if (!recording) {
-        return;
-      }
-
-      setIsRecording(false);
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-
-      setAudioUri(uri);
-      setRecording(null);
-
-      console.log('[MoodEntry] Recording stopped, URI:', uri);
-
-      // Auto-add to note
-      if (uri) {
-        setNote(prev => prev + (prev ? '\n\n' : '') + '[Voice note recorded]');
-      }
-
+      console.log('[MoodEntry] Stopping speech recognition...');
+      await Voice.stop();
     } catch (error) {
-      console.error('[MoodEntry] Failed to stop recording:', error);
-      Alert.alert('Error', 'Failed to stop recording');
+      console.error('[MoodEntry] Failed to stop speech recognition:', error);
+      setIsRecording(false);
     }
   };
 
@@ -280,19 +263,10 @@ export default function MoodEntryScreen() {
       setIsSaving(true);
       console.log('[MoodEntry] Saving mood entry...');
 
-      let audioPath = null;
-
-      // Upload audio if recorded
-      if (audioUri) {
-        console.log('[MoodEntry] Uploading audio...');
-        audioPath = await uploadMoodAudio(userId, userToken, audioUri);
-      }
-
       // Create mood entry
       const moodData = {
         mood_score: selectedMood.score,
         note: note.trim() || null,
-        audio_path: audioPath,
       };
 
       await createMoodEntry(userId, userToken, moodData);

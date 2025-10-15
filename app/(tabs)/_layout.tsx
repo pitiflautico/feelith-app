@@ -83,7 +83,7 @@ export default function TabLayout() {
         {/* Center FAB Button */}
         <TouchableOpacity
           style={styles.fabButton}
-          onPress={() => navigation.navigate('new')}
+          onPress={() => navigation.navigate('create-mood')}
           activeOpacity={0.8}
         >
           <IconSymbol name="plus" size={28} color="#FFFFFF" />
@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 10,
+    backgroundColor: '#0F172A', // Background color for safe area
   },
   tabBar: {
     flexDirection: 'row',
