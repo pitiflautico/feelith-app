@@ -17,6 +17,12 @@ export default function TabLayout() {
       return null;
     }
 
+    // Don't show tab bar on create-mood screen
+    const currentRoute = state.routes[state.index];
+    if (currentRoute.name === 'create-mood') {
+      return null;
+    }
+
     return (
       <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom || 20 }]}>
         <View style={styles.tabBar}>
