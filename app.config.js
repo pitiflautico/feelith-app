@@ -35,6 +35,7 @@ module.exports = {
       infoPlist: {
         NSMicrophoneUsageDescription: 'Allow $(PRODUCT_NAME) to access your microphone to record voice notes for your mood entries.',
         NSSpeechRecognitionUsageDescription: 'Allow $(PRODUCT_NAME) to use speech recognition to convert your voice notes to text.',
+        NSPhotoLibraryUsageDescription: 'Allow $(PRODUCT_NAME) to access your photo library to select photos for your profile or mood entries.',
         ITSAppUsesNonExemptEncryption: false,
       },
       // Universal Links - automatically added if ASSOCIATED_DOMAINS is configured
