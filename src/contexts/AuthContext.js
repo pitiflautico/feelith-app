@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import * as authService from '../services/authService';
+import { registerBackgroundSync, unregisterBackgroundSync, triggerManualSync } from '../services/backgroundSyncService';
 import config from '../config/config';
 
 /**
@@ -58,6 +59,13 @@ export const AuthProvider = ({ children }) => {
         if (config.DEBUG) {
           console.log('[AuthContext] User is authenticated:', authData.userId);
         }
+
+        // Register background sync if user is already logged in
+        try {
+          await registerBackgroundSync();
+        } catch (error) {
+          console.error('[AuthContext] Failed to register background sync on startup:', error);
+        }
       } else {
         setIsLoggedIn(false);
         setUserId(null);
@@ -104,6 +112,16 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
+        // Register background sync for calendar events
+        try {
+          await registerBackgroundSync();
+          // Trigger initial sync
+          await triggerManualSync(userToken);
+        } catch (error) {
+          console.error('[AuthContext] Failed to setup background sync:', error);
+          // Don't fail login if background sync fails
+        }
+
         return true;
       } else {
         console.error('[AuthContext] Failed to save auth data');
@@ -123,6 +141,14 @@ export const AuthProvider = ({ children }) => {
    */
   const logout = async () => {
     try {
+      // Unregister background sync before logout
+      try {
+        await unregisterBackgroundSync();
+      } catch (error) {
+        console.error('[AuthContext] Failed to unregister background sync:', error);
+        // Continue with logout even if this fails
+      }
+
       const success = await authService.clearAuthData();
 
       if (success) {

@@ -11,6 +11,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Keyboard,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Voice from '@react-native-voice/voice';
@@ -139,6 +140,62 @@ const MoodSelector = memo(({ moods, selectedMood, onMoodSelect }) => {
 });
 
 /**
+ * Toast Component
+ * Simple toast notification that appears at the top of the screen
+ */
+const Toast = ({ message, visible, onHide }) => {
+  const translateY = React.useRef(new Animated.Value(-100)).current;
+
+  React.useEffect(() => {
+    if (visible) {
+      // Slide down
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
+
+      // Auto hide after 3 seconds
+      const timer = setTimeout(() => {
+        Animated.timing(translateY, {
+          toValue: -100,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => {
+          onHide();
+        });
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View
+      style={[
+        styles.toastContainer,
+        {
+          transform: [{ translateY }],
+        },
+      ]}
+    >
+      <View style={styles.toast}>
+        <View style={styles.toastIcon}>
+          <IconSymbol name="checkmark.circle.fill" size={24} color="#10B981" />
+        </View>
+        <Text style={styles.toastText}>{message}</Text>
+        <TouchableOpacity onPress={onHide} style={styles.toastCloseButton}>
+          <IconSymbol name="xmark" size={20} color="#9CA3AF" />
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+};
+
+/**
  * MoodEntryScreen Component
  *
  * Native screen for creating mood entries
@@ -148,15 +205,21 @@ const MoodSelector = memo(({ moods, selectedMood, onMoodSelect }) => {
  * - Speech-to-text recording
  * - Save to API
  */
-export default function MoodEntryScreen() {
+export default function MoodEntryScreen({ route }) {
   const { isLoggedIn, userId, userToken } = useAuth();
   const router = useRouter();
+
+  // Get event ID from route params (if coming from notification)
+  const eventId = route?.params?.eventId;
+  const eventTitle = route?.params?.eventTitle;
 
   // State
   const [selectedMood, setSelectedMood] = useState(null);
   const [note, setNote] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // Set up Voice speech recognition event handlers
   useEffect(() => {
@@ -243,17 +306,24 @@ export default function MoodEntryScreen() {
       const moodData = {
         mood_score: selectedMood.score,
         note: note.trim() || null,
+        calendar_event_id: eventId || null, // Associate with event if present
       };
 
       await createMoodEntry(userId, userToken, moodData);
 
       console.log('[MoodEntry] Mood entry saved successfully');
-      Alert.alert('Success!', 'Your mood has been saved.', [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)/'),
-        },
-      ]);
+
+      // Show toast notification
+      setToastMessage('Your mood has been saved');
+      setShowToast(true);
+
+      // Redirect to mood history (calendar tab) after a short delay
+      setTimeout(() => {
+        router.push({
+          pathname: '/(tabs)/',
+          params: { initialUrl: '/mood-history', forceReload: true }
+        });
+      }, 500);
 
     } catch (error) {
       console.error('[MoodEntry] Error saving mood:', error);
@@ -274,6 +344,13 @@ export default function MoodEntryScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={0}
     >
+      {/* Toast Notification */}
+      <Toast
+        message={toastMessage}
+        visible={showToast}
+        onHide={() => setShowToast(false)}
+      />
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -290,6 +367,16 @@ export default function MoodEntryScreen() {
             <IconSymbol name="ellipsis" size={24} color="#000" />
           </TouchableOpacity>
         </View>
+
+        {/* Event Badge (if mood is for an event) */}
+        {eventId && eventTitle && (
+          <View style={styles.eventBadge}>
+            <IconSymbol name="calendar" size={16} color="#7C3AED" />
+            <Text style={styles.eventBadgeText} numberOfLines={1}>
+              {eventTitle}
+            </Text>
+          </View>
+        )}
 
         {/* Title */}
         <Text style={styles.title}>How's Your Mood?</Text>
@@ -397,6 +484,24 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  eventBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3E8FF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignSelf: 'center',
+    marginBottom: 16,
+    gap: 8,
+    maxWidth: '90%',
+  },
+  eventBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#7C3AED',
+    flexShrink: 1,
   },
   title: {
     fontSize: 32,
@@ -525,5 +630,46 @@ const styles = StyleSheet.create({
   },
   micButtonRecording: {
     backgroundColor: '#EF4444',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 20,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    alignSelf: 'center',
+    maxWidth: 448, // max-w-md (28rem = 448px)
+  },
+  toast: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16, // rounded-2xl
+    borderWidth: 2,
+    borderColor: '#BBF7D0', // border-green-200
+    paddingVertical: 16, // py-4
+    paddingHorizontal: 20, // px-5
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  toastIcon: {
+    flexShrink: 0,
+  },
+  toastText: {
+    fontSize: 16, // text-base
+    fontWeight: '500', // font-medium
+    color: '#111827', // text-gray-900
+    flex: 1,
+  },
+  toastCloseButton: {
+    flexShrink: 0,
+    padding: 4,
   },
 });

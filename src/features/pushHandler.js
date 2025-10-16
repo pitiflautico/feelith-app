@@ -129,6 +129,35 @@ const handleNativeAction = (data) => {
 };
 
 /**
+ * Handle event mood notification
+ * Opens create mood screen with event context
+ *
+ * @param {object} data - Notification data containing event info
+ */
+const handleEventMood = (data) => {
+  const { eventId, eventTitle } = data;
+
+  if (!eventId) {
+    console.warn('[PushHandler] Event mood notification missing eventId');
+    return;
+  }
+
+  if (config.DEBUG) {
+    console.log('[PushHandler] Opening mood entry for event:', eventTitle || eventId);
+  }
+
+  // Navigate to create mood with event context
+  // This will be handled by the router
+  if (webViewNavigate) {
+    // Navigate to the create-mood route with eventId param
+    const url = `${config.WEB_URL}/create-mood?eventId=${eventId}`;
+    webViewNavigate(url);
+  } else {
+    console.warn('[PushHandler] WebView navigation not available for event mood');
+  }
+};
+
+/**
  * Main notification handler
  * Called when a notification is received (foreground) or tapped (background)
  *
@@ -160,6 +189,10 @@ export const handleNotification = (notification) => {
 
       case 'nativeAction':
         handleNativeAction(data);
+        break;
+
+      case 'event_mood':
+        handleEventMood(data);
         break;
 
       default:

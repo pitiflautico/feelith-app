@@ -14,14 +14,14 @@ const config = {
    * Change this to your web application URL for each new app
    * @example 'https://example.com'
    */
-  WEB_URL: process.env.NODE_ENV !== 'production' ? 'http://192.168.86.222:8000' : 'https://feelith.com',
+  WEB_URL: process.env.NODE_ENV !== 'production' ? 'http://192.168.86.222:8082' : 'https://feelith.com',
 
   /**
    * The API base URL for making API requests
    * This is typically the WEB_URL + '/api'
    * @example 'https://example.com/api'
    */
-  API_URL: process.env.NODE_ENV !== 'production' ? 'http://192.168.86.222:8000/api' : 'https://feelith.com/api',
+  API_URL: process.env.NODE_ENV !== 'production' ? 'http://192.168.86.222:8082/api' : 'https://feelith.com/api',
 
   // ===== App Information =====
 
