@@ -126,6 +126,17 @@ module.exports = {
           cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera to capture emotional selfies.',
         },
       ],
+      [
+        'expo-build-properties',
+        {
+          ios: {
+            deploymentTarget: '16.0',
+          },
+          android: {
+            minSdkVersion: 24,
+          },
+        },
+      ],
     ],
 
     // ===== EXPERIMENTS =====

@@ -206,12 +206,15 @@ const Toast = ({ message, visible, onHide }) => {
  * - Save to API
  */
 export default function MoodEntryScreen({ route }) {
-  const { isLoggedIn, userId, userToken } = useAuth();
+  const { isLoggedIn, userId, userToken, isLoading } = useAuth();
   const router = useRouter();
 
   // Get event ID from route params (if coming from notification)
-  const eventId = route?.params?.eventId;
-  const eventTitle = route?.params?.eventTitle;
+  // Works with both React Navigation and Expo Router
+  const { useLocalSearchParams } = require('expo-router');
+  const searchParams = useLocalSearchParams();
+  const eventId = route?.params?.eventId || searchParams?.eventId;
+  const eventTitle = route?.params?.eventTitle || searchParams?.eventTitle;
 
   // State
   const [selectedMood, setSelectedMood] = useState(null);
@@ -220,6 +223,19 @@ export default function MoodEntryScreen({ route }) {
   const [isSaving, setIsSaving] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Check authentication status on mount
+  useEffect(() => {
+    console.log('[MoodEntry] Auth state:', { isLoading, isLoggedIn, hasUserId: !!userId, hasToken: !!userToken });
+
+    // If auth is loaded and user is not logged in, redirect to home
+    if (!isLoading && !isLoggedIn) {
+      console.log('[MoodEntry] User not authenticated, redirecting to home');
+      Alert.alert('Not authenticated', 'Please log in to save your mood.', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)/') }
+      ]);
+    }
+  }, [isLoading, isLoggedIn]);
 
   // Set up Voice speech recognition event handlers
   useEffect(() => {
@@ -287,7 +303,7 @@ export default function MoodEntryScreen({ route }) {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!selectedMood) {
       Alert.alert('Please select a mood', 'Choose how you\'re feeling before saving.');
       return;
@@ -298,45 +314,48 @@ export default function MoodEntryScreen({ route }) {
       return;
     }
 
-    try {
-      setIsSaving(true);
-      console.log('[MoodEntry] Saving mood entry...');
-
-      // Create mood entry
-      const moodData = {
-        mood_score: selectedMood.score,
+    // Navigate to tag selector screen
+    router.push({
+      pathname: '/mood-tag-selector',
+      params: {
+        moodScore: selectedMood.score,
+        moodName: selectedMood.name,
         note: note.trim() || null,
-        calendar_event_id: eventId || null, // Associate with event if present
-      };
-
-      await createMoodEntry(userId, userToken, moodData);
-
-      console.log('[MoodEntry] Mood entry saved successfully');
-
-      // Show toast notification
-      setToastMessage('Your mood has been saved');
-      setShowToast(true);
-
-      // Redirect to mood history (calendar tab) after a short delay
-      setTimeout(() => {
-        router.push({
-          pathname: '/(tabs)/',
-          params: { initialUrl: '/mood-history', forceReload: true }
-        });
-      }, 500);
-
-    } catch (error) {
-      console.error('[MoodEntry] Error saving mood:', error);
-      Alert.alert('Error', 'Failed to save your mood. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
+        eventId: eventId || null,
+        eventTitle: eventTitle || null,
+      }
+    });
   };
 
   const getMoodName = () => {
     if (!selectedMood) return 'your mood';
     return selectedMood.name.toLowerCase();
   };
+
+  // Show loading screen while auth is being checked
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#7C3AED" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Show not authenticated screen if user is not logged in
+  if (!isLoggedIn) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>Please log in to continue</Text>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => router.replace('/(tabs)/')}
+        >
+          <Text style={styles.primaryButtonText}>Go to Home</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -363,8 +382,23 @@ export default function MoodEntryScreen({ route }) {
             <IconSymbol name="chevron.left" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Create New Mood</Text>
-          <TouchableOpacity style={styles.menuButton}>
-            <IconSymbol name="ellipsis" size={24} color="#000" />
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => {
+              // Navigate to selfie camera with current mood data
+              router.push({
+                pathname: '/mood-selfie-camera',
+                params: {
+                  moodScore: selectedMood?.score || null,
+                  moodName: selectedMood?.name || null,
+                  note: note || null,
+                  eventId: eventId || null,
+                  eventTitle: eventTitle || null,
+                }
+              });
+            }}
+          >
+            <IconSymbol name="camera.fill" size={24} color="#000" />
           </TouchableOpacity>
         </View>
 
@@ -460,7 +494,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: Platform.OS === 'ios' ? 60 : 20,
     paddingHorizontal: 24,
-    paddingBottom: 120,
+    paddingBottom: 140, // Extra padding for floating tab bar (120 + 20)
   },
   header: {
     flexDirection: 'row',

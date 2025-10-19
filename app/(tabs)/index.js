@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
@@ -72,6 +72,17 @@ export default function HomeScreen() {
         const hasPermission = await requestPermissions();
         if (hasPermission) {
           await registerForPushNotifications();
+        }
+
+        // Check if app was opened by tapping a notification (when app was killed)
+        const lastNotificationResponse = await Notifications.getLastNotificationResponseAsync();
+        if (lastNotificationResponse) {
+          console.log('[HomeScreen] App opened from notification (killed state)');
+          console.log('[HomeScreen] Last notification response:', lastNotificationResponse);
+          // Small delay to ensure app is ready
+          setTimeout(() => {
+            handleNotificationResponse(lastNotificationResponse);
+          }, 500);
         }
       } catch (error) {
         console.error('[HomeScreen] Error initializing push notifications:', error);
@@ -207,13 +218,13 @@ export default function HomeScreen() {
    */
   const webViewRef = useRef(null);
 
-  const handleWebViewNavigate = (navigateFn) => {
+  const handleWebViewNavigate = useCallback((navigateFn) => {
     // Get reload function from WebView ref
     const reloadFn = webViewRef.current?.reload;
     setWebViewNavigate(navigateFn, reloadFn);
     // Store navigate function for FAB
     setWebViewNavigateState(() => navigateFn);
-  };
+  }, []); // Empty dependency array - function doesn't depend on anything
 
   /**
    * Handle messages from the web application
@@ -248,14 +259,23 @@ export default function HomeScreen() {
 
           console.log('[HomeScreen] 🔵 Login result:', success ? 'SUCCESS' : 'FAILED');
 
-          if (success && message.pushTokenEndpoint) {
-            console.log('[HomeScreen] 🔵 Registering push token...');
-            // Register push token with backend if endpoint provided
-            await registerPushToken(
-              message.userId,
-              message.userToken,
-              message.pushTokenEndpoint
-            );
+          if (success) {
+            if (message.pushTokenEndpoint) {
+              console.log('[HomeScreen] 🔵 Registering push token...');
+              // Register push token with backend if endpoint provided
+              await registerPushToken(
+                message.userId,
+                message.userToken,
+                message.pushTokenEndpoint
+              );
+            }
+
+            // Reload WebView to establish session with the new token
+            console.log('[HomeScreen] 🔵 Reloading WebView to establish session...');
+            if (webViewRef.current && webViewRef.current.navigateToUrl) {
+              const sessionUrl = `${config.WEB_URL}/auth/session?token=${message.userToken}`;
+              webViewRef.current.navigateToUrl(sessionUrl);
+            }
           }
         } else {
           console.error('[HomeScreen] ❌ Missing userId or userToken');

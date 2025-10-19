@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking, TextInput, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking, TextInput, ActivityIndicator, Switch, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { Audio } from 'expo-av';
 import { Camera } from 'expo-camera';
+import * as Clipboard from 'expo-clipboard';
 import useAuth from '../hooks/useAuth';
 import config from '../config/config';
 import { registerPushToken } from '../services/pushTokenService';
+import { registerForPushNotifications } from '../services/pushService';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useRouter } from 'expo-router';
 
@@ -45,6 +47,10 @@ const SettingsScreen = () => {
   const [audioStatus, setAudioStatus] = useState(null);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
 
+  // Push Token Debugging
+  const [currentPushToken, setCurrentPushToken] = useState(null);
+  const [isRefreshingToken, setIsRefreshingToken] = useState(false);
+
   useEffect(() => {
     if (isLoggedIn && userToken) {
       console.log('[Settings] Loading data with token:', userToken ? 'Token present' : 'No token');
@@ -52,6 +58,7 @@ const SettingsScreen = () => {
       loadUserProfile();
       loadCalendarStatus();
       checkAllPermissions();
+      loadCurrentPushToken();
     } else if (isLoggedIn && !userToken) {
       console.log('[Settings] User is logged in but token is missing');
     }
@@ -192,10 +199,13 @@ const SettingsScreen = () => {
 
   /**
    * Sync calendar now
+   * Backend will handle sending push notifications when events end
    */
   const syncCalendarNow = async () => {
     try {
       setIsSyncing(true);
+
+      console.log('[Settings] Syncing calendar with Google...');
       const response = await fetch(`${config.API_URL}/profile/calendar/sync`, {
         method: 'POST',
         headers: {
@@ -211,7 +221,11 @@ const SettingsScreen = () => {
           ...calendarStatus,
           last_sync_at: data.data.last_sync_at,
         });
-        Alert.alert('Success', `${data.data.events_synced} events synced!`);
+
+        Alert.alert(
+          'Success',
+          `${data.data.events_synced} events synced! You'll receive push notifications when events end.`
+        );
       } else {
         Alert.alert('Error', data.message);
       }
@@ -321,6 +335,84 @@ const SettingsScreen = () => {
       console.error('[Settings] Error checking permissions:', error);
     } finally {
       setIsLoadingPermissions(false);
+    }
+  };
+
+  /**
+   * Load current push token from Expo
+   */
+  const loadCurrentPushToken = async () => {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        setCurrentPushToken(null);
+        return;
+      }
+
+      const tokenParams = {};
+      if (config.EXPO_PROJECT_ID) {
+        tokenParams.projectId = config.EXPO_PROJECT_ID;
+      }
+
+      const tokenData = await Notifications.getExpoPushTokenAsync(tokenParams);
+      const pushToken = tokenData.data;
+
+      console.log('[Settings] Current push token:', pushToken);
+      setCurrentPushToken(pushToken);
+    } catch (error) {
+      console.error('[Settings] Error loading push token:', error);
+      setCurrentPushToken(null);
+    }
+  };
+
+  /**
+   * Refresh and register push token
+   */
+  const handleRefreshPushToken = async () => {
+    try {
+      setIsRefreshingToken(true);
+
+      // Get fresh token from Expo
+      const token = await registerForPushNotifications();
+
+      if (!token) {
+        Alert.alert('Error', 'Could not get push token. Make sure notifications are enabled.');
+        return;
+      }
+
+      setCurrentPushToken(token);
+      console.log('[Settings] New push token:', token);
+
+      // Register with backend if endpoint is available
+      if (pushTokenEndpoint) {
+        const success = await registerPushToken(userId, userToken, pushTokenEndpoint);
+        if (success) {
+          Alert.alert('Success', 'Push token registered successfully!\n\nToken copied to clipboard.');
+          // Copy to clipboard
+          await Clipboard.setStringAsync(token);
+        } else {
+          Alert.alert('Error', 'Failed to register token with backend');
+        }
+      } else {
+        Alert.alert('Success', 'Push token obtained!\n\nToken copied to clipboard.');
+        // Copy to clipboard
+        await Clipboard.setStringAsync(token);
+      }
+    } catch (error) {
+      console.error('[Settings] Error refreshing push token:', error);
+      Alert.alert('Error', 'Failed to refresh push token');
+    } finally {
+      setIsRefreshingToken(false);
+    }
+  };
+
+  /**
+   * Copy push token to clipboard
+   */
+  const handleCopyPushToken = async () => {
+    if (currentPushToken) {
+      await Clipboard.setStringAsync(currentPushToken);
+      Alert.alert('Copied', 'Push token copied to clipboard');
     }
   };
 
@@ -726,6 +818,83 @@ const SettingsScreen = () => {
       >
         <Text style={styles.systemSettingsText}>Open System Settings</Text>
       </TouchableOpacity>
+
+      {/* Push Token Debugging (only show if logged in) */}
+      {isLoggedIn && config.DEBUG && (
+        <>
+          <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+            <IconSymbol name="ant.circle.fill" size={24} color="#F59E0B" />
+            <Text style={styles.sectionTitle}>Push Token (Debug)</Text>
+          </View>
+
+          <View style={styles.debugCard}>
+            <Text style={styles.debugLabel}>Current Token:</Text>
+            {currentPushToken ? (
+              <>
+                <View style={styles.tokenContainer}>
+                  <Text style={styles.tokenText} numberOfLines={2}>
+                    {currentPushToken}
+                  </Text>
+                </View>
+                <View style={styles.debugButtonRow}>
+                  <TouchableOpacity
+                    style={[styles.debugButton, styles.debugButtonSecondary]}
+                    onPress={handleCopyPushToken}
+                  >
+                    <IconSymbol name="doc.on.doc" size={16} color="#8B6F47" />
+                    <Text style={[styles.debugButtonText, styles.debugButtonTextSecondary]}>
+                      Copy
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.debugButton, isRefreshingToken && styles.debugButtonDisabled]}
+                    onPress={handleRefreshPushToken}
+                    disabled={isRefreshingToken}
+                  >
+                    {isRefreshingToken ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <IconSymbol name="arrow.clockwise" size={16} color="#FFF" />
+                    )}
+                    <Text style={styles.debugButtonText}>
+                      {isRefreshingToken ? 'Updating...' : 'Refresh & Register'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.debugHint}>
+                  No push token available. Enable notifications first.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.debugButton, isRefreshingToken && styles.debugButtonDisabled]}
+                  onPress={handleRefreshPushToken}
+                  disabled={isRefreshingToken}
+                >
+                  {isRefreshingToken ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <IconSymbol name="arrow.clockwise" size={16} color="#FFF" />
+                  )}
+                  <Text style={styles.debugButtonText}>
+                    {isRefreshingToken ? 'Getting Token...' : 'Get Token'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            <View style={styles.debugInfo}>
+              <Text style={styles.debugInfoText}>
+                💡 Use this token to test notifications from the backend:
+              </Text>
+              <Text style={styles.debugInfoCode}>
+                php artisan notifications:test "YOUR_TOKEN" --delay=10
+              </Text>
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 
@@ -1059,6 +1228,91 @@ const styles = StyleSheet.create({
     color: '#8B6F47',
     fontSize: 14,
     fontWeight: '600',
+  },
+  debugCard: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  debugLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#92400E',
+    marginBottom: 8,
+  },
+  debugHint: {
+    fontSize: 13,
+    color: '#92400E',
+    marginBottom: 12,
+    fontStyle: 'italic',
+  },
+  tokenContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  tokenText: {
+    fontSize: 11,
+    color: '#92400E',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  debugButtonRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  debugButton: {
+    flex: 1,
+    backgroundColor: '#F59E0B',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  debugButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  debugButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  debugButtonTextSecondary: {
+    color: '#92400E',
+  },
+  debugButtonDisabled: {
+    opacity: 0.5,
+  },
+  debugInfo: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  debugInfoText: {
+    fontSize: 12,
+    color: '#92400E',
+    marginBottom: 6,
+  },
+  debugInfoCode: {
+    fontSize: 11,
+    color: '#92400E',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    backgroundColor: '#FEF3C7',
+    padding: 8,
+    borderRadius: 6,
   },
 });
 

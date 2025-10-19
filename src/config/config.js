@@ -40,7 +40,7 @@ const config = {
   /**
    * App version (keep in sync with package.json)
    */
-  APP_VERSION: '1.0.0',
+  APP_VERSION: '1.1.0',
 
   /**
    * iOS Bundle Identifier (reverse domain notation)

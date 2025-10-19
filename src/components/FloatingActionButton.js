@@ -54,12 +54,7 @@ export default function FloatingActionButton({ isLoggedIn, onNavigate, onCameraO
 
     // Handle action after a short delay for smooth animation
     setTimeout(() => {
-      if (menuItem.action === 'camera') {
-        // Open camera
-        if (onCameraOpen && typeof onCameraOpen === 'function') {
-          onCameraOpen();
-        }
-      } else if (menuItem.path) {
+      if (menuItem.path) {
         // Navigate to path
         if (onNavigate && typeof onNavigate === 'function') {
           onNavigate(menuItem.path);
@@ -75,16 +70,16 @@ export default function FloatingActionButton({ isLoggedIn, onNavigate, onCameraO
 
   const menuActions = [
     {
-      id: 'new-mood',
-      label: 'New Mood',
-      icon: '😊',
-      path: '/mood/new',
+      id: 'text-mood',
+      label: 'Text Mood',
+      icon: '✍️',
+      path: '/(tabs)/create-mood',
     },
     {
-      id: 'photo-selfie',
-      label: 'Photo Selfie',
+      id: 'mood-selfie',
+      label: 'Mood Selfie',
       icon: '📸',
-      action: 'camera',
+      path: '/mood-selfie-camera',
     },
   ];
 

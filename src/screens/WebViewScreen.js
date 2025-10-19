@@ -51,6 +51,17 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
         return;
       }
 
+      // Handle goBack action from web app
+      if (message.action === 'goBack') {
+        if (config.DEBUG) {
+          console.log('[WebView] Go back requested from web app');
+        }
+        if (canGoBack && webViewRef.current) {
+          webViewRef.current.goBack();
+        }
+        return;
+      }
+
       if (config.DEBUG) {
         console.log('[WebView] Message received:', message);
       }
@@ -231,7 +242,8 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
     if (onNavigate) {
       onNavigate(navigateToUrl);
     }
-  }, [onNavigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only call once on mount
 
   // Handle Android back button
   useEffect(() => {
@@ -263,7 +275,7 @@ const WebViewScreen = forwardRef(({ onMessage, url, onNavigate, onReady, onUrlCh
   }
 
   return (
-    <View style={[styles.container, !isOnboarding && styles.containerWithTabBar]}>
+    <View style={styles.container}>
       {/* Show loading screen while WebView is loading */}
       {isLoading && (
         <LoadingScreen message="Loading..." />
@@ -377,10 +389,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: config.COLORS.BACKGROUND,
-  },
-  containerWithTabBar: {
-    // Reserve space at bottom for the floating tab bar (only when not in onboarding)
-    paddingBottom: config.LAYOUT.TAB_BAR_HEIGHT,
   },
   webview: {
     flex: 1,

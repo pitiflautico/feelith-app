@@ -130,7 +130,7 @@ const handleNativeAction = (data) => {
 
 /**
  * Handle event mood notification
- * Opens create mood screen with event context
+ * Opens native create mood screen with event context
  *
  * @param {object} data - Notification data containing event info
  */
@@ -143,17 +143,33 @@ const handleEventMood = (data) => {
   }
 
   if (config.DEBUG) {
-    console.log('[PushHandler] Opening mood entry for event:', eventTitle || eventId);
+    console.log('[PushHandler] Opening native mood entry for event:', eventTitle || eventId);
   }
 
-  // Navigate to create mood with event context
-  // This will be handled by the router
-  if (webViewNavigate) {
-    // Navigate to the create-mood route with eventId param
-    const url = `${config.WEB_URL}/create-mood?eventId=${eventId}`;
-    webViewNavigate(url);
-  } else {
-    console.warn('[PushHandler] WebView navigation not available for event mood');
+  // Import router dynamically to avoid circular dependencies
+  const { router } = require('expo-router');
+
+  // Navigate to native create mood screen with event params
+  try {
+    router.push({
+      pathname: '/(tabs)/create-mood',
+      params: {
+        eventId,
+        eventTitle: eventTitle || 'Event',
+      },
+    });
+
+    if (config.DEBUG) {
+      console.log('[PushHandler] Navigation to native mood screen successful');
+    }
+  } catch (error) {
+    console.error('[PushHandler] Failed to navigate to mood screen:', error);
+
+    // Fallback: try navigating via WebView if available
+    if (webViewNavigate) {
+      const url = `${config.WEB_URL}/create-mood?eventId=${eventId}`;
+      webViewNavigate(url);
+    }
   }
 };
 

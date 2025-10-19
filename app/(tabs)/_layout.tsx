@@ -64,7 +64,7 @@ export default function TabLayout() {
     };
 
     return (
-      <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom || 20 }]}>
+      <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom || 20 }]} pointerEvents="box-none">
         <View style={styles.tabBar}>
           {/* Left tabs */}
           <View style={styles.tabGroup}>
@@ -83,7 +83,10 @@ export default function TabLayout() {
         {/* Center FAB Button */}
         <TouchableOpacity
           style={styles.fabButton}
-          onPress={() => navigation.navigate('create-mood')}
+          onPress={() => {
+            // Navigate directly to create-mood instead of going through 'new' tab
+            navigation.navigate('create-mood');
+          }}
           activeOpacity={0.8}
         >
           <IconSymbol name="plus" size={28} color="#FFFFFF" />
@@ -149,26 +152,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 10,
-    backgroundColor: '#0F172A', // Background color for safe area
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#1F2937', // Dark gray/black
+    backgroundColor: 'rgba(31, 41, 55, 0.95)', // Semi-transparent dark gray with high opacity
     borderRadius: 30,
     paddingHorizontal: 20,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'space-between',
-    minWidth: '100%',
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)', // Subtle border for depth
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 8,
+        elevation: 12,
       },
     }),
   },
